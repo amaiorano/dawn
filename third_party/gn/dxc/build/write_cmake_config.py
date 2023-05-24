@@ -64,6 +64,9 @@ def main():
         in_lines = f.readlines()
     out_lines = []
     for in_line in in_lines:
+        # Skip '${}' as we can't replace the value
+        if '${}' in in_line:
+            continue
         def repl(m):
             key = m.group(1) or m.group(2)
             unused_values.discard(key)

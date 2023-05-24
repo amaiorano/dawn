@@ -19,16 +19,209 @@ import("${dawn_root}/scripts/dawn_features.gni")
 # TODO(amaiorano): Validate that we can copy these from LLVM
 import("build/write_cmake_config.gni")
 import("build/triples.gni")
+llvm_target_triple = "dxil-ms-dx"
 import("build/targets.gni")
 import("build/version.gni")
 
 # TODO(amaiorano): Move this somewhere?
 dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
 
-declare_args() {
-  # From utils\gn\build\libs\pthread\enable.gni
-  # Whether to enable threading.
-  llvm_enable_threads = true
+write_cmake_config("config") {
+  input = "${dawn_dxc_dir}/include/llvm/Config/config.h.cmake"
+  output = "$target_gen_dir/include/llvm/Config/config.h"
+  values = [
+    # TODO(amaiorano): Many of the flags set here are duplicated for the "llvm-config" target below.
+    # Factor this out somehow (template?).
+
+    # TODO(amaiorano): enable this flag when asserts are enabled
+    "LLVM_ENABLE_ABI_BREAKING_CHECKS=0",
+    "LLVM_ENABLE_THREADS=1",
+    "LLVM_HAS_ATOMICS=1",
+    "HAVE_INTTYPES_H=1",
+    "HAVE_STDINT_H=1",
+    "HAVE_UINT64_T=1",
+    "HAVE_U_INT64_T=1",
+    "LLVM_BINDIR=",
+    "LLVM_CONFIGTIME=",    
+    "LLVM_DATADIR=",    
+    "LLVM_DEFAULT_TARGET_TRIPLE=$llvm_target_triple",
+    "LLVM_DOCSDIR=",
+    "LLVM_ETCDIR=",
+    "LLVM_HOST_TRIPLE=$llvm_current_triple",
+    "LLVM_INCLUDEDIR=",
+    "LLVM_INFODIR=",
+    "LLVM_MANDIR=",
+    "LLVM_NATIVE_ARCH=$native_target",
+    "LLVM_PREFIX=",
+    "LLVM_VERSION_MAJOR=$llvm_version_major",
+    "LLVM_VERSION_MINOR=$llvm_version_minor",
+    "LLVM_VERSION_PATCH=$llvm_version_patch",
+    "PACKAGE_VERSION=${llvm_version}git",
+    "PACKAGE_BUGREPORT=http://llvm.org/bugs/",
+    "PACKAGE_NAME=LLVM",
+    "PACKAGE_STRING=LLVM ${llvm_version}git",
+    "strdup=strdup",
+    "stricmp=stricmp",
+    "strtoll=strtoll",
+    "strtoull=strtoull",
+
+
+    #@TODO(amaiorano): Revisit variables below. Most are just unset for now.
+    "ENABLE_BACKTRACES=",
+    "ENABLE_CRASH_OVERRIDES=",
+    "DISABLE_LLVM_DYLIB_ATEXIT=",
+    "ENABLE_PIC=",
+    "HAVE_DECL_STRERROR_S=",
+    "HAVE_ISATTY=1",
+    "LLVM_ENABLE_ZLIB=",
+    "LLVM_USE_INTEL_JITEVENTS=",
+    "LLVM_USE_OPROFILE=",
+    "LINK_POLLY_INTO_TOOLS=",
+    "BUG_REPORT_URL=",
+    "ENABLE_TIMESTAMPS=",
+    "HAVE____CHKSTK_MS=",
+    "HAVE____CHKSTK=",
+    "HAVE___ALLOCA=",
+    "HAVE___ASHLDI3=",
+    "HAVE___ASHRDI3=",
+    "HAVE___CHKSTK_MS=",
+    "HAVE___CHKSTK=",
+    "HAVE___CMPDI2=",
+    "HAVE___DIVDI3=",
+    "HAVE___FIXDFDI=",
+    "HAVE___FIXSFDI=",
+    "HAVE___FLOATDIDF=",
+    "HAVE___LSHRDI3=",
+    "HAVE___MAIN=",
+    "HAVE___MODDI3=",
+    "HAVE___UDIVDI3=",
+    "HAVE___UMODDI3=",
+    "HAVE__ALLOCA=",
+    "HAVE__CHSIZE_S=",
+    "HAVE_BACKTRACE=",
+    "HAVE_CLOSEDIR=",
+    "HAVE_CXXABI_H=",
+    "HAVE_DECL_ARC4RANDOM=",
+    "HAVE_DIA_SDK=",
+    "HAVE_DIRENT_H=",
+    "HAVE_DLERROR=",
+    "HAVE_DLFCN_H=",
+    "HAVE_DLOPEN=",
+    "HAVE_ERRNO_H=",
+    "HAVE_EXECINFO_H=",
+    "HAVE_FCNTL_H=",
+    "HAVE_FENV_H=",
+    "HAVE_FFI_CALL=",
+    "HAVE_FFI_FFI_H=",
+    "HAVE_FFI_H=",
+    "HAVE_FUTIMENS=",
+    "HAVE_FUTIMES=",
+    "HAVE_GETCWD=",
+    "HAVE_GETPAGESIZE=",
+    "HAVE_GETRLIMIT=",
+    "HAVE_GETRUSAGE=",
+    "HAVE_GETTIMEOFDAY=",
+    "HAVE_INT64_T=",
+    "HAVE_LIBDL=",
+    "HAVE_LIBEDIT=",
+    "HAVE_LIBPSAPI=",
+    "HAVE_LIBPTHREAD=",
+    "HAVE_LIBSHELL32=",
+    "HAVE_LIBZ=",
+    "HAVE_LIMITS_H=",
+    "HAVE_LINK_H=",
+    "HAVE_LONGJMP=",
+    "HAVE_MACH_MACH_H=",
+    "HAVE_MACH_O_DYLD_H=",
+    "HAVE_MALLCTL=",
+    "HAVE_MALLINFO=",
+    "HAVE_MALLINFO2=",
+    "HAVE_MALLOC_H=",
+    "HAVE_MALLOC_MALLOC_H=",
+    "HAVE_MALLOC_ZONE_STATISTICS=",
+    "HAVE_MKDTEMP=",
+    "HAVE_MKSTEMP=",
+    "HAVE_MKTEMP=",
+    "HAVE_NDIR_H=",
+    "HAVE_OPENDIR=",
+    "HAVE_POSIX_SPAWN=",
+    "HAVE_PREAD=",
+    "HAVE_PTHREAD_GETSPECIFIC=",
+    "HAVE_PTHREAD_H=",
+    "HAVE_PTHREAD_MUTEX_LOCK=",
+    "HAVE_PTHREAD_RWLOCK_INIT=",
+    "HAVE_RAND48=",
+    "HAVE_READDIR=",
+    "HAVE_REALPATH=",
+    "HAVE_SBRK=",
+    "HAVE_SETENV=",
+    "HAVE_SETJMP=",
+    "HAVE_SETRLIMIT=",
+    "HAVE_SIGLONGJMP=",
+    "HAVE_SIGNAL_H=",
+    "HAVE_SIGSETJMP=",
+    "HAVE_STRDUP=",
+    "HAVE_STRERROR_R=",
+    "HAVE_STRERROR=",
+    "HAVE_STRTOLL=",
+    "HAVE_STRTOQ=",
+    "HAVE_SYS_DIR_H=",
+    "HAVE_SYS_IOCTL_H=",
+    "HAVE_SYS_NDIR_H=",
+    "HAVE_SYS_PARAM_H=",
+    "HAVE_SYS_RESOURCE_H=",
+    "HAVE_SYS_STAT_H=",
+    "HAVE_SYS_TIME_H=",
+    "HAVE_SYS_TYPES_H=",
+    "HAVE_SYS_UIO_H=",
+    "HAVE_SYS_WAIT_H=",
+    "HAVE_TERMINFO=",
+    "HAVE_TERMIOS_H=",
+    "HAVE_UNISTD_H=",
+    "HAVE_UTIME_H=",
+    "HAVE_VALGRIND_VALGRIND_H=",
+    "HAVE_WRITEV=",
+    "HAVE_ZLIB_H=",
+    "LTDL_DLOPEN_DEPLIBS=",
+    "LTDL_SHLIB_EXT=",
+    "LTDL_SYSSEARCHPATH=",
+    "RETSIGTYPE=",
+    "WIN32_ELMCB_PCSTR=",    
+  ]
+
+  # NOTE: These are meta-definitions for the variable (not value) to determine
+  # whether they should be defined or undefined in the generated header.
+  if (false && llvm_build_native) {
+    values += [
+      "LLVM_NATIVE_ASMPARSER=1",
+      "LLVM_NATIVE_ASMPRINTER=1",
+      "LLVM_NATIVE_DISASSEMBLER=1",
+      "LLVM_NATIVE_TARGET=1",
+      "LLVM_NATIVE_TARGETINFO=1",
+      "LLVM_NATIVE_TARGETMC=1",
+    ]
+  } else {
+    values += [
+      "LLVM_NATIVE_ASMPARSER=",
+      "LLVM_NATIVE_ASMPRINTER=",
+      "LLVM_NATIVE_DISASSEMBLER=",
+      "LLVM_NATIVE_TARGET=",
+      "LLVM_NATIVE_TARGETINFO=",
+      "LLVM_NATIVE_TARGETMC=",
+    ]  
+  }
+
+  if (is_win) {
+    values += [
+      "LLVM_ON_UNIX=",
+      "LLVM_ON_WIN32=1",
+    ]
+  } else {
+    values += [
+      "LLVM_ON_UNIX=1",
+      "LLVM_ON_WIN32=",
+    ]
+  }
 }
 
 write_cmake_config("llvm-config") {
@@ -57,9 +250,12 @@ write_cmake_config("llvm-config") {
     "LLVM_VERSION_PATCH=$llvm_version_patch",
     "PACKAGE_VERSION=${llvm_version}git",
     "LINK_POLLY_INTO_TOOLS=",
+    "LLVM_ENABLE_THREADS=1",
   ]
 
-  if (llvm_build_native) {
+  # NOTE: These are meta-definitions for the variable (not value) to determine
+  # whether they should be defined or undefined in the generated header.
+  if (false && llvm_build_native) {
     values += [
       "LLVM_NATIVE_ASMPARSER=1",
       "LLVM_NATIVE_ASMPRINTER=1",
@@ -79,7 +275,7 @@ write_cmake_config("llvm-config") {
     ]
   }
 
-  if (current_os == "win") {
+  if (is_win) {
     values += [
       "LLVM_ON_UNIX=",
       "LLVM_ON_WIN32=1",
@@ -89,12 +285,6 @@ write_cmake_config("llvm-config") {
       "LLVM_ON_UNIX=1",
       "LLVM_ON_WIN32=0",
     ]
-  }
-
-  if (llvm_enable_threads) {
-    values += [ "LLVM_ENABLE_THREADS=1" ]
-  } else {
-    values += [ "LLVM_ENABLE_THREADS=" ]
   }
 }
 
@@ -109,12 +299,76 @@ write_cmake_config("DataTypes") {
   ]
 }
 
-config("dxclib_config") {
+write_cmake_config("TargetsDef") {
+  input = "${dawn_dxc_dir}/include/llvm/Config/Targets.def.in"
+  output = "$target_gen_dir/include/llvm/Config/Targets.def"
+  values = [
+    # TODO(amaiorano): Should normally contain list of supported targets,
+    # which I think should be AMDGPU and NVPTX based on LLVM_ALL_TARGETS
+    # in the root CMakeLists.txt, but building with CMake, the generated
+    # TargetsDef.h has no value at all for this...
+    "LLVM_ENUM_TARGETS=",
+  ]
+}
+
+write_cmake_config("AsmPrintersDef") {
+  input = "${dawn_dxc_dir}/include/llvm/Config/AsmPrinters.def.in"
+  output = "$target_gen_dir/include/llvm/Config/AsmPrinters.def"
+  values = [
+    "LLVM_ENUM_ASM_PRINTERS=",
+  ]
+}
+
+write_cmake_config("AsmParsersDef") {
+  input = "${dawn_dxc_dir}/include/llvm/Config/AsmParsers.def.in"
+  output = "$target_gen_dir/include/llvm/Config/AsmParsers.def"
+  values = [
+    "LLVM_ENUM_ASM_PARSERS=",
+  ]
+}
+
+write_cmake_config("DisassemblersDef") {
+  input = "${dawn_dxc_dir}/include/llvm/Config/Disassemblers.def.in"
+  output = "$target_gen_dir/include/llvm/Config/Disassemblers.def"
+  values = [
+    "LLVM_ENUM_DISASSEMBLERS=",
+  ]
+}
+
+
+config("common_config") {
   if (is_win) {
+    warning_flags = [
+      "-Wno-error", # For now, allow warnings @TODO(amaiorano): replace with specific warning disables
+      "-Wno-unknown-pragmas",
+      "-Wno-shadow",
+      "-Wno-deprecated-declarations",
+      "-Wno-deprecated-enum-float-conversion",
+      "-Wno-extra-semi",
+      "-Wno-reorder-ctor",
+      "-Wno-implicit-fallthrough",
+      "-Wno-header-hygiene",
+      "-Wno-unused-const-variable",
+      "-Wno-implicit-fallthrough",
+      "-Wno-sign-compare",
+      "-Wno-unused-but-set-variable",
+      "-Wno-unreachable-code-return",
+      "-Wno-unreachable-code-break",
+      "-Wno-unused-function",
+      "-Wno-unused-local-typedef",
+      "-Wno-string-conversion",
+    ]
+
     cflags_cc = [
       "/EHsc", # DXC uses exceptions
-      "-Wno-error" # For now, allow warnings @TODO(amaiorano): replace with specific warning disables
-      ]
+      "/std:c++17", # TODO(amaiorano): Not sure I need this
+      "/Zc:__cplusplus",
+    ] + warning_flags
+
+    cflags_c = [
+      "/EHsc", # DXC uses exceptions
+      "/std:c17",
+    ] + warning_flags
   }
 
   include_dirs = [
@@ -124,13 +378,139 @@ config("dxclib_config") {
   ]
 }
 
+static_library("Support") {
+  output_name = "LLVMSupport"
+
+  public_configs = [
+    ":common_config"
+  ]
+
+  public_deps = [
+    ":config",
+    ":TargetsDef",
+    ":AsmPrintersDef",
+    ":AsmParsersDef",
+    ":DisassemblersDef",
+    ":llvm-config",
+    # ":DataTypes",
+  ]
+
+  include_dirs = [
+    # TODO(amaiorano): Move to common_config?
+    "${dawn_dxc_dir}/include/llvm/llvm_assert",
+  ]
+
+  source_dir = "${dawn_dxc_dir}/lib/Support"
+  sources = [
+      "${source_dir}/APFloat.cpp",
+      "${source_dir}/APInt.cpp",
+      "${source_dir}/APSInt.cpp",
+      "${source_dir}/ARMBuildAttrs.cpp",
+      "${source_dir}/ARMWinEH.cpp",
+      "${source_dir}/Allocator.cpp",
+      "${source_dir}/BlockFrequency.cpp",
+      "${source_dir}/BranchProbability.cpp",
+      "${source_dir}/circular_raw_ostream.cpp",
+      "${source_dir}/COM.cpp",
+      "${source_dir}/CommandLine.cpp",
+      "${source_dir}/Compression.cpp",
+      "${source_dir}/ConvertUTF.c",
+      "${source_dir}/ConvertUTFWrapper.cpp",
+      "${source_dir}/CrashRecoveryContext.cpp",
+      "${source_dir}/DataExtractor.cpp",
+      "${source_dir}/DataStream.cpp",
+      "${source_dir}/Debug.cpp",
+      "${source_dir}/DeltaAlgorithm.cpp",
+      "${source_dir}/DAGDeltaAlgorithm.cpp",
+      "${source_dir}/Dwarf.cpp",
+      "${source_dir}/ErrorHandling.cpp",
+      "${source_dir}/FileUtilities.cpp",
+      "${source_dir}/FileOutputBuffer.cpp",
+      "${source_dir}/FoldingSet.cpp",
+      "${source_dir}/FormattedStream.cpp",
+      "${source_dir}/GraphWriter.cpp",
+      "${source_dir}/Hashing.cpp",
+      "${source_dir}/IntEqClasses.cpp",
+      "${source_dir}/IntervalMap.cpp",
+      "${source_dir}/IntrusiveRefCntPtr.cpp",
+      "${source_dir}/LEB128.cpp",
+      "${source_dir}/LineIterator.cpp",
+      "${source_dir}/Locale.cpp",
+      "${source_dir}/LockFileManager.cpp",
+      "${source_dir}/ManagedStatic.cpp",
+      "${source_dir}/MathExtras.cpp",
+      "${source_dir}/MemoryBuffer.cpp",
+      "${source_dir}/MemoryObject.cpp",
+      "${source_dir}/MSFileSystemBasic.cpp",
+      "${source_dir}/MD5.cpp",
+      "${source_dir}/Options.cpp",
+      # PluginLoader.cpp    # HLSL Change Starts - no support for plug-in loader
+      "${source_dir}/PrettyStackTrace.cpp",
+      "${source_dir}/RandomNumberGenerator.cpp",
+      "${source_dir}/Regex.cpp",
+      "${source_dir}/ScaledNumber.cpp",
+      "${source_dir}/SmallPtrSet.cpp",
+      "${source_dir}/SmallVector.cpp",
+      "${source_dir}/SourceMgr.cpp",
+      "${source_dir}/SpecialCaseList.cpp",
+      "${source_dir}/Statistic.cpp",
+      "${source_dir}/StreamingMemoryObject.cpp",
+      "${source_dir}/StringExtras.cpp",
+      "${source_dir}/StringMap.cpp",
+      "${source_dir}/StringPool.cpp",
+      "${source_dir}/StringSaver.cpp",
+      "${source_dir}/StringRef.cpp",
+      "${source_dir}/SystemUtils.cpp",
+      "${source_dir}/TargetParser.cpp",
+      "${source_dir}/Timer.cpp",
+      "${source_dir}/ToolOutputFile.cpp",
+      "${source_dir}/Triple.cpp",
+      "${source_dir}/Twine.cpp",
+      "${source_dir}/Unicode.cpp",
+      "${source_dir}/YAMLParser.cpp",
+      "${source_dir}/YAMLTraits.cpp",
+      "${source_dir}/raw_os_ostream.cpp",
+      "${source_dir}/raw_ostream.cpp",
+      "${source_dir}/regcomp.c",
+      "${source_dir}/regerror.c",
+      "${source_dir}/regexec.c",
+      "${source_dir}/regfree.c",
+      "${source_dir}/regstrlcpy.c",
+      "${source_dir}/regmalloc.cpp", # HLSL Change
+
+      # System
+      "${source_dir}/assert.cpp",      # HLSL Change
+      "${source_dir}/Atomic.cpp",
+      # DynamicLibrary.cpp # HLSL Change - no support for interpreter or jit
+      "${source_dir}/Errno.cpp",
+      "${source_dir}/Host.cpp",
+      "${source_dir}/Memory.cpp",
+      "${source_dir}/Mutex.cpp",
+      "${source_dir}/Path.cpp",
+      "${source_dir}/Process.cpp",
+      "${source_dir}/Program.cpp",
+      "${source_dir}/RWMutex.cpp",
+      "${source_dir}/SearchForAddressOfSpecialSymbol.cpp",
+      "${source_dir}/Signals.cpp",
+      "${source_dir}/TargetRegistry.cpp",
+      "${source_dir}/ThreadLocal.cpp",
+      "${source_dir}/Threading.cpp",
+      "${source_dir}/TimeProfiler.cpp", # HLSL Change - Support hierarchial time tracing.
+      "${source_dir}/TimeValue.cpp",
+      "${source_dir}/Valgrind.cpp",
+      "${source_dir}/Watchdog.cpp", 
+  ]
+}
+
+
 static_library("dxclib") {
   public_configs = [
-    ":dxclib_config"
+    ":common_config"
   ]
   public_deps = [
-    ":llvm-config",
+    # ":llvm-config",
     ":DataTypes",
+    ":Support"
   ]
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxclib/dxc.cpp",
