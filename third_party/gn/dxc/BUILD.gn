@@ -19,18 +19,17 @@ import("${dawn_root}/scripts/dawn_features.gni")
 # TODO(amaiorano): Validate that we can copy these from LLVM
 import("build/write_cmake_config.gni")
 import("build/triples.gni")
-llvm_target_triple = "dxil-ms-dx"
 import("build/targets.gni")
 import("build/version.gni")
 
-# TODO(amaiorano): Move this somewhere?
+llvm_target_triple = "dxil-ms-dx" # Force target triple
 dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
 
-write_cmake_config("config") {
+write_cmake_config("config-header") {
   input = "${dawn_dxc_dir}/include/llvm/Config/config.h.cmake"
   output = "$target_gen_dir/include/llvm/Config/config.h"
   values = [
-    # TODO(amaiorano): Many of the flags set here are duplicated for the "llvm-config" target below.
+    # TODO(amaiorano): Many of the flags set here are duplicated for the "llvm-config-header" target below.
     # Factor this out somehow (template?).
 
     # TODO(amaiorano): enable this flag when asserts are enabled
@@ -224,7 +223,7 @@ write_cmake_config("config") {
   }
 }
 
-write_cmake_config("llvm-config") {
+write_cmake_config("llvm-config-header") {
   input = "${dawn_dxc_dir}/include/llvm/Config/llvm-config.h.cmake"
   output = "$target_gen_dir/include/llvm/Config/llvm-config.h"
   values = [
@@ -288,7 +287,7 @@ write_cmake_config("llvm-config") {
   }
 }
 
-write_cmake_config("DataTypes") {
+write_cmake_config("DataTypes-header") {
   input = "${dawn_dxc_dir}/include/llvm/Support/DataTypes.h.cmake"
   output = "$target_gen_dir/include/llvm/Support/DataTypes.h"
   values = [
@@ -299,7 +298,7 @@ write_cmake_config("DataTypes") {
   ]
 }
 
-write_cmake_config("TargetsDef") {
+write_cmake_config("Targets-def") {
   input = "${dawn_dxc_dir}/include/llvm/Config/Targets.def.in"
   output = "$target_gen_dir/include/llvm/Config/Targets.def"
   values = [
@@ -311,7 +310,7 @@ write_cmake_config("TargetsDef") {
   ]
 }
 
-write_cmake_config("AsmPrintersDef") {
+write_cmake_config("AsmPrinters-def") {
   input = "${dawn_dxc_dir}/include/llvm/Config/AsmPrinters.def.in"
   output = "$target_gen_dir/include/llvm/Config/AsmPrinters.def"
   values = [
@@ -319,7 +318,7 @@ write_cmake_config("AsmPrintersDef") {
   ]
 }
 
-write_cmake_config("AsmParsersDef") {
+write_cmake_config("AsmParsers-def") {
   input = "${dawn_dxc_dir}/include/llvm/Config/AsmParsers.def.in"
   output = "$target_gen_dir/include/llvm/Config/AsmParsers.def"
   values = [
@@ -327,7 +326,7 @@ write_cmake_config("AsmParsersDef") {
   ]
 }
 
-write_cmake_config("DisassemblersDef") {
+write_cmake_config("Disassemblers-def") {
   input = "${dawn_dxc_dir}/include/llvm/Config/Disassemblers.def.in"
   output = "$target_gen_dir/include/llvm/Config/Disassemblers.def"
   values = [
@@ -386,13 +385,12 @@ static_library("Support") {
   ]
 
   public_deps = [
-    ":config",
-    ":TargetsDef",
-    ":AsmPrintersDef",
-    ":AsmParsersDef",
-    ":DisassemblersDef",
-    ":llvm-config",
-    # ":DataTypes",
+    ":config-header",
+    ":Targets-def",
+    ":AsmPrinters-def",
+    ":AsmParsers-def",
+    ":Disassemblers-def",
+    ":llvm-config-header",
   ]
 
   include_dirs = [
@@ -508,8 +506,7 @@ static_library("dxclib") {
     ":common_config"
   ]
   public_deps = [
-    # ":llvm-config",
-    ":DataTypes",
+    ":DataTypes-header",
     ":Support"
   ]
   sources = [
