@@ -357,6 +357,7 @@ config("common_config") {
       "-Wno-unused-function",
       "-Wno-unused-local-typedef",
       "-Wno-string-conversion",
+      "-Wno-macro-redefined",
     ]
 
     cflags_cc = [
@@ -374,7 +375,8 @@ config("common_config") {
   include_dirs = [
     "${dawn_dxc_dir}/include",
     "${dawn_dxc_dir}/tools/clang/tools",
-    "${target_gen_dir}/include" # Generated files
+    "${dawn_dxc_dir}/include/llvm/llvm_assert",
+    "${target_gen_dir}/include", # Generated files
   ]
 }
 
@@ -392,11 +394,6 @@ static_library("Support") {
     ":AsmParsers-def",
     ":Disassemblers-def",
     ":llvm-config-header",
-  ]
-
-  include_dirs = [
-    # TODO(amaiorano): Move to common_config?
-    "${dawn_dxc_dir}/include/llvm/llvm_assert",
   ]
 
   sources = [
@@ -560,6 +557,12 @@ static_library("dxclib") {
   public_configs = [
     ":common_config"
   ]
+  
+  configs -= [
+    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
+    "//build/config/win:unicode"
+  ]
+
   public_deps = [
     ":DataTypes-header",
     ":Support",
