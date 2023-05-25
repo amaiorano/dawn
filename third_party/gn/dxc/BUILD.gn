@@ -21,6 +21,7 @@ import("build/write_cmake_config.gni")
 import("build/triples.gni")
 import("build/targets.gni")
 import("build/version.gni")
+import("build/tablegen.gni")
 
 llvm_target_triple = "dxil-ms-dx" # Force target triple
 dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
@@ -502,7 +503,6 @@ static_library("Support") {
 }
 
 executable("llvm-tblgen") {
-# static_library("llvm-tblgen") {
   deps = [
     ":Support"
   ]
@@ -549,6 +549,12 @@ executable("llvm-tblgen") {
   ]
 }
 
+tablegen("HLSLOptions-inc") {
+  args = ["-gen-opt-parser-defs"]
+  td_file = "${dawn_dxc_dir}/include/dxc/Support/HLSLOptions.td"
+  output_name = "include/dxc/Support/HLSLOptions.inc"
+  tblgen_target = ":llvm-tblgen"
+}
 
 static_library("dxclib") {
   public_configs = [
@@ -557,7 +563,7 @@ static_library("dxclib") {
   public_deps = [
     ":DataTypes-header",
     ":Support",
-    ":llvm-tblgen", # TEMP!
+    ":HLSLOptions-inc", # TEMP!
   ]
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxclib/dxc.cpp",
