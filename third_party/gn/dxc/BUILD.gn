@@ -358,6 +358,8 @@ config("common_config") {
       "-Wno-unused-local-typedef",
       "-Wno-string-conversion",
       "-Wno-macro-redefined",
+      "-Wno-unreachable-code",
+      "-Wno-switch",
     ]
 
     cflags_cc = [
@@ -499,6 +501,40 @@ static_library("Support") {
   ]
 }
 
+write_cmake_config("SharedLibAffix-h") {
+  input = "${dawn_dxc_dir}/lib/DxcSupport/SharedLibAffix.inc"
+  output = "$target_gen_dir/include/dxc/Support/SharedLibAffix.h"
+  values = [
+    # TODO(amaiorano): Expose arg to set these?
+    "CMAKE_SHARED_LIBRARY_PREFIX=",
+    "CMAKE_SHARED_LIBRARY_SUFFIX=",
+  ]
+}
+
+static_library("DxcSupport") {
+  output_name = "LLVMDxcSupport"
+
+  public_configs = [
+    ":common_config",
+  ]
+
+  public_deps = [
+    ":HLSLOptions-inc",
+    ":SharedLibAffix-h",
+  ]
+
+  sources = [
+      "${dawn_dxc_dir}/lib/DxcSupport/dxcapi.use.cpp",
+      "${dawn_dxc_dir}/lib/DxcSupport/dxcmem.cpp",
+      "${dawn_dxc_dir}/lib/DxcSupport/FileIOHelper.cpp",
+      "${dawn_dxc_dir}/lib/DxcSupport/Global.cpp",
+      "${dawn_dxc_dir}/lib/DxcSupport/HLSLOptions.cpp",
+      "${dawn_dxc_dir}/lib/DxcSupport/Unicode.cpp",
+      "${dawn_dxc_dir}/lib/DxcSupport/WinAdapter.cpp",
+      "${dawn_dxc_dir}/lib/DxcSupport/WinFunctions.cpp",    
+  ]
+}
+
 executable("llvm-tblgen") {
   deps = [
     ":Support"
@@ -553,6 +589,13 @@ tablegen("HLSLOptions-inc") {
   tblgen_target = ":llvm-tblgen"
 }
 
+tablegen("Intrinsics-td") {
+  args = ["-gen-intrinsic"]
+  td_file = "${dawn_dxc_dir}/include/llvm/IR/Intrinsics.td"
+  output_name = "include/llvm/IR/Intrinsics.gen"
+  tblgen_target = ":llvm-tblgen"
+}
+
 static_library("dxclib") {
   public_configs = [
     ":common_config"
@@ -566,10 +609,48 @@ static_library("dxclib") {
   public_deps = [
     ":DataTypes-header",
     ":Support",
-    ":HLSLOptions-inc", # TEMP!
+    ":DxcSupport",
+    ":Intrinsics-td",
   ]
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxclib/dxc.cpp",
+
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainer.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerAssembler.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerReader.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxcContainerBuilder.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilRDATBuilder.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilRuntimeReflection.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/RDATDxilSubobjects.cpp",
+
+    "${dawn_dxc_dir}/lib/DXIL/DxilCBuffer.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilCompType.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilCounters.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilInterpolationMode.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilMetadataHelper.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilModule.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilModuleHelper.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilOperations.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilResource.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilResourceBase.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilResourceBinding.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilResourceProperties.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSampler.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSemantic.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilShaderFlags.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilShaderModel.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSignature.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSignatureElement.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSubobject.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilTypeSystem.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilUtil.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilUtilDbgInfoAndMisc.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilPDB.cpp",
+
+    "${dawn_dxc_dir}/lib/Option/Arg.cpp",
+    "${dawn_dxc_dir}/lib/Option/ArgList.cpp",
+    "${dawn_dxc_dir}/lib/Option/Option.cpp",
+    "${dawn_dxc_dir}/lib/Option/OptTable.cpp",
   ]
 }
 
