@@ -376,6 +376,7 @@ config("common_config") {
 
   include_dirs = [
     "${dawn_dxc_dir}/include",
+    "${dawn_dxc_dir}/tools/clang/include",
     "${dawn_dxc_dir}/tools/clang/tools",
     "${dawn_dxc_dir}/include/llvm/llvm_assert",
     "${target_gen_dir}/include", # Generated files
@@ -535,13 +536,12 @@ static_library("DxcSupport") {
   ]
 }
 
-executable("llvm-tblgen") {
-  deps = [
-    ":Support"
+source_set("TableGen") {
+  public_deps = [
+    ":Support",
   ]
 
   sources = [
-    # Note: Is a static library "TableGen" in CMake
     "${dawn_dxc_dir}/lib/TableGen/Error.cpp",
     "${dawn_dxc_dir}/lib/TableGen/Main.cpp",
     "${dawn_dxc_dir}/lib/TableGen/Record.cpp",
@@ -549,8 +549,16 @@ executable("llvm-tblgen") {
     "${dawn_dxc_dir}/lib/TableGen/StringMatcher.cpp",
     "${dawn_dxc_dir}/lib/TableGen/TableGenBackend.cpp",
     "${dawn_dxc_dir}/lib/TableGen/TGLexer.cpp",
-    "${dawn_dxc_dir}/lib/TableGen/TGParser.cpp",
-    # 
+    "${dawn_dxc_dir}/lib/TableGen/TGParser.cpp",    
+  ]
+}
+
+executable("llvm-tblgen") {
+  deps = [
+    ":TableGen",
+  ]
+
+  sources = [
     "${dawn_dxc_dir}/utils/TableGen/AsmMatcherEmitter.cpp",
     "${dawn_dxc_dir}/utils/TableGen/AsmWriterEmitter.cpp",
     "${dawn_dxc_dir}/utils/TableGen/AsmWriterInst.cpp",
@@ -654,6 +662,100 @@ static_library("dxclib") {
   ]
 }
 
+executable("clang-tblgen") {
+  deps = [
+    ":TableGen",
+  ]
+
+  sources = [
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/ClangASTNodesEmitter.cpp",
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/ClangAttrEmitter.cpp",
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/ClangCommentCommandInfoEmitter.cpp",
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/ClangCommentHTMLNamedCharacterReferenceEmitter.cpp",
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/ClangCommentHTMLTagsEmitter.cpp",
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/ClangDiagnosticsEmitter.cpp",
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/ClangSACheckersEmitter.cpp",
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/NeonEmitter.cpp",
+    "${dawn_dxc_dir}/tools/clang/utils/TableGen/TableGen.cpp",
+  ]
+}
+
+template("clang_tablegen") {
+  tablegen(target_name) {
+    forward_variables_from(invoker,
+                        [
+                          "output_name",
+                          "td_file",
+                          "visibility",
+                        ])
+   args = invoker.args
+   tblgen_target = ":clang-tblgen"
+  }  
+}
+
+template("clang_diag_gen") {
+  assert(defined(invoker.component), "must set 'component' in $target_name")
+  clang_tablegen("Diagnostic${invoker.component}Kinds.inc") {
+    args = ["-gen-clang-diags-defs", "-clang-component=${invoker.component}"]
+    td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Diagnostic.td"
+    output_name = "/tools/clang/include/clang/Basic/Diagnostic${invoker.component}Kinds.inc"
+  }
+}
+
+clang_tablegen("DiagnosticCommonKinds-inc") {
+  args = ["-gen-clang-diags-defs", "-clang-component=Common"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Diagnostic.td"
+  output_name = "/tools/clang/include/clang/Basic/DiagnosticCommonKinds.inc"
+}
+
+shared_library("dxcompiler") {
+  if (dawn_has_build) {
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+  }
+
+  public_configs = [
+    ":common_config"
+  ]  
+  
+  configs -= [
+    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
+    "//build/config/win:unicode"
+  ]
+
+  deps = [
+    ":DiagnosticCommonKinds-inc",
+  ]
+
+  include_dirs = [
+    # TODO(amaiorano): Maybe move to common_config?
+    "${target_gen_dir}/tools/clang/include", # Generated files
+  ]
+
+  sources = [
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcapi.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcassembler.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxclibrary.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcompilerobj.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/DXCompiler.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcfilesystem.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcutil.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcdisassembler.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcpdbutils.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxillib.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcvalidator.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxclinker.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcshadersourceinfo.cpp",
+  ]
+  if (is_win) {
+    # TODO(amaiorano): Create action that does like C:\src\external\DirectXShaderCompiler2\include\dxc\Tracing\CMakeLists.txt
+    # sources += [
+    #   "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/DXCompiler.rc",
+    #   "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/DXCompiler.def",
+    # ]
+  }
+}
+
 executable("dxc") {
   if (dawn_has_build) {
     configs -= [ "//build/config/compiler:chromium_code" ]
@@ -661,7 +763,8 @@ executable("dxc") {
   }
 
   deps = [
-    ":dxclib"
+    ":dxclib",
+    ":dxcompiler",
   ]
   # include_dirs = [
   #   "${dawn_dxc_dir}/include",
