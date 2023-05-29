@@ -872,8 +872,44 @@ ClangSemaDeps = [
   ":AttrParsedAttrImpl-inc",
 ]
 
+# cmake/modules/HCT.cmake
+# TODO(amaiorano): Move to add_hlsl_hctgen.gni
+template("add_hlsl_hctgen") {
+  assert(defined(invoker.mode), "must set 'mode' in $target_name")
+  assert(defined(invoker.output), "must set 'output' in $target_name")
+
+  action(target_name) {
+    if (defined(invoker.build_dir) && invoker.build_dir) {
+      # TODO
+    }
+    if (defined(invoker.code_tag) && invoker.code_tag) {
+      # TODO
+    }
+
+    script = "${invoker.dawn_dxc_dir}/utils/hct/hctgen.py"
+    inputs = [
+      "${invoker.dawn_dxc_dir}/utils/hct/gen_intrin_main.txt",      
+      "${invoker.dawn_dxc_dir}/utils/hct/hctdb.py",
+      "${invoker.dawn_dxc_dir}/utils/hct/hctdb_instrhelp.py",
+    ]
+    gen_output = "$target_gen_dir" + invoker.output
+    outputs = [
+      gen_output      
+    ]
+    args = [
+      "--force-lf", # Always?
+      "${invoker.mode}",
+      "--output", rebase_path(gen_output, root_build_dir),
+    ]
+    # TODO(amaiorano) Make sure both build_dir and code_tag aren't true
+  }
+}
 # tools/clang/tools/dxcompiler/CMakeLists.txt
-# TODO: hctgen template
+add_hlsl_hctgen("DxcDisassembler-inc") {
+  mode = "DxcDisassembler"
+  output = "/tools/clang/tools/dxcompiler/DxcDisassembler.inc"
+  build_dir = true
+}
 
 shared_library("dxcompiler") {
   if (dawn_has_build) {
@@ -890,7 +926,7 @@ shared_library("dxcompiler") {
     "//build/config/win:unicode"
   ]
 
-  deps = []
+  deps = [":DxcDisassembler-inc"]
   deps += ClangBasicDeps
   deps += ClangASTDeps
   deps += ClangSemaDeps
@@ -898,6 +934,7 @@ shared_library("dxcompiler") {
   include_dirs = [
     # TODO(amaiorano): Maybe move to common_config?
     "${target_gen_dir}/tools/clang/include", # Generated files
+    "${target_gen_dir}/tools/clang/tools/dxcompiler", # Generated files    
   ]
 
   sources = [
