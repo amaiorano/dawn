@@ -682,31 +682,198 @@ executable("clang-tblgen") {
 
 template("clang_tablegen") {
   tablegen(target_name) {
-    forward_variables_from(invoker,
-                        [
-                          "output_name",
-                          "td_file",
-                          "visibility",
-                        ])
+  forward_variables_from(invoker,
+                      [
+                        "output_name",
+                        "td_file",
+                        "visibility",
+                      ])
    args = invoker.args
    tblgen_target = ":clang-tblgen"
   }  
 }
 
+# This doesn't work for some reason
+# template("clang_diag_gen") {
+#   assert(defined(invoker.component), "must set 'component' in $target_name")
+#   clang_tablegen("Diagnostic${invoker.component}Kinds-inc") {
+#     forward_variables_from(invoker, "*")
+#     args = ["-gen-clang-diags-defs", "-clang-component=${invoker.component}"]
+#     td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Diagnostic.td"
+#     output_name = "/tools/clang/include/clang/Basic/Diagnostic${invoker.component}Kinds.inc"
+#   }
+# }
+# clang_diag_gen("") { component = ["Common"] }
+
+# Explicit
+# clang_tablegen("DiagnosticCommonKinds-inc") {
+#   args = ["-gen-clang-diags-defs", "-clang-component=Common"]
+#   td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Diagnostic.td"
+#   output_name = "/tools/clang/include/clang/Basic/DiagnosticCommonKinds.inc"
+# }
+
+# tools/clang/include/clang/Basic/CMakeLists.txt
 template("clang_diag_gen") {
-  assert(defined(invoker.component), "must set 'component' in $target_name")
-  clang_tablegen("Diagnostic${invoker.component}Kinds.inc") {
-    args = ["-gen-clang-diags-defs", "-clang-component=${invoker.component}"]
+  clang_tablegen("Diagnostic${target_name}Kinds-inc") {
+    forward_variables_from(invoker, "*")
+    args = ["-gen-clang-diags-defs", "-clang-component=${target_name}"]
     td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Diagnostic.td"
-    output_name = "/tools/clang/include/clang/Basic/Diagnostic${invoker.component}Kinds.inc"
+    output_name = "/tools/clang/include/clang/Basic/Diagnostic${target_name}Kinds.inc"
   }
 }
-
-clang_tablegen("DiagnosticCommonKinds-inc") {
-  args = ["-gen-clang-diags-defs", "-clang-component=Common"]
+clang_diag_gen("Analysis"){}
+clang_diag_gen("AST"){}
+clang_diag_gen("Comment"){}
+clang_diag_gen("Common"){}
+clang_diag_gen("Driver"){}
+clang_diag_gen("Frontend"){}
+clang_diag_gen("Lex"){}
+clang_diag_gen("Parse"){}
+clang_diag_gen("Sema"){}
+clang_diag_gen("Serialization"){}
+clang_tablegen("DiagnosticGroups-inc") {
+  args = ["-gen-clang-diag-groups"]
   td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Diagnostic.td"
-  output_name = "/tools/clang/include/clang/Basic/DiagnosticCommonKinds.inc"
+  output_name = "/tools/clang/include/clang/Basic/DiagnosticGroups.inc"
 }
+clang_tablegen("AttrList-inc") {
+  args = ["-gen-clang-attr-list", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Basic/AttrList.inc"
+}
+clang_tablegen("AttrHasAttributeImpl-inc") {
+  args = ["-gen-clang-attr-list", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Basic/AttrHasAttributeImpl.inc"
+}
+ClangBasicDeps = [
+  ":DiagnosticAnalysisKinds-inc", 
+  ":DiagnosticASTKinds-inc",
+  ":DiagnosticCommentKinds-inc",
+  ":DiagnosticCommonKinds-inc",
+  ":DiagnosticDriverKinds-inc",
+  ":DiagnosticFrontendKinds-inc",
+  ":DiagnosticLexKinds-inc",
+  ":DiagnosticParseKinds-inc",
+  ":DiagnosticSemaKinds-inc",
+  ":DiagnosticSerializationKinds-inc",
+  ":DiagnosticGroups-inc",
+  ":AttrList-inc",
+  ":AttrHasAttributeImpl-inc",
+]
+
+# tools/clang/include/clang/AST/CMakeLists.txt
+clang_tablegen("Attrs-inc") {
+  args = ["-gen-clang-attr-classes", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/AST/Attrs.inc"
+}
+clang_tablegen("AttrImpl-inc") {
+  args = ["-gen-clang-attr-impl", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/AST/AttrImpl.inc"
+}
+clang_tablegen("AttrDump-inc") {
+  args = ["-gen-clang-attr-dump", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/AST/AttrDump.inc"
+}
+clang_tablegen("AttrVisitor-inc") {
+  args = ["-gen-clang-attr-ast-visitor", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/AST/AttrVisitor.inc"
+}
+clang_tablegen("StmtNodes-inc") {
+  args = ["-gen-clang-stmt-nodes"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/StmtNodes.td"
+  output_name = "/tools/clang/include/clang/AST/StmtNodes.inc"
+}
+clang_tablegen("DeclNodes-inc") {
+  args = ["-gen-clang-decl-nodes"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/DeclNodes.td"
+  output_name = "/tools/clang/include/clang/AST/DeclNodes.inc"
+}
+clang_tablegen("CommentNodes-inc") {
+  args = ["-gen-clang-comment-nodes"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/CommentNodes.td"
+  output_name = "/tools/clang/include/clang/AST/CommentNodes.inc"
+}
+clang_tablegen("CommentHTMLTags-inc") {
+  args = ["-gen-clang-comment-html-tags"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/AST/CommentHTMLTags.td"
+  output_name = "/tools/clang/include/clang/AST/CommentHTMLTags.inc"
+}
+clang_tablegen("CommentHTMLTagsProperties-inc") {
+  args = ["-gen-clang-comment-html-tags-properties"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/AST/CommentHTMLTags.td"
+  output_name = "/tools/clang/include/clang/AST/CommentHTMLTagsProperties.inc"
+}
+clang_tablegen("CommentHTMLNamedCharacterReferences-inc") {
+  args = ["-gen-clang-comment-html-named-character-references"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/AST/CommentHTMLNamedCharacterReferences.td"
+  output_name = "/tools/clang/include/clang/AST/CommentHTMLNamedCharacterReferences.inc"
+}
+clang_tablegen("CommentCommandInfo-inc") {
+  args = ["-gen-clang-comment-command-info"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/AST/CommentCommands.td"
+  output_name = "/tools/clang/include/clang/AST/CommentCommandInfo.inc"
+}
+clang_tablegen("CommentCommandList-inc") {
+  args = ["-gen-clang-comment-command-list"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/AST/CommentCommands.td"
+  output_name = "/tools/clang/include/clang/AST/CommentCommandList.inc"
+}
+ClangASTDeps = [
+  ":Attrs-inc",
+  ":AttrImpl-inc",
+  ":AttrDump-inc",
+  ":AttrVisitor-inc",
+  ":StmtNodes-inc",
+  ":DeclNodes-inc",
+  ":CommentNodes-inc",
+  ":CommentHTMLTags-inc",
+  ":CommentHTMLTagsProperties-inc",
+  ":CommentHTMLNamedCharacterReferences-inc",
+  ":CommentCommandInfo-inc",
+  ":CommentCommandList-inc",
+]
+
+# tools/clang/include/clang/Sema/CMakeLists.txt
+clang_tablegen("AttrTemplateInstantiate-inc") {
+  args = [ "-gen-clang-attr-template-instantiate", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Sema/AttrTemplateInstantiate.inc"
+}
+clang_tablegen("AttrParsedAttrList-inc") {
+  args = [ "-gen-clang-attr-parsed-attr-list", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Sema/AttrParsedAttrList.inc"
+}
+clang_tablegen("AttrParsedAttrKinds-inc") {
+  args = [ "-gen-clang-attr-parsed-attr-kinds", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Sema/AttrParsedAttrKinds.inc"
+}
+clang_tablegen("AttrSpellingListIndex-inc") {
+  args = [ "-gen-clang-attr-spelling-index", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Sema/AttrSpellingListIndex.inc"
+}
+clang_tablegen("AttrParsedAttrImpl-inc") {
+  args = [ "-gen-clang-attr-parsed-attr-impl", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Sema/AttrParsedAttrImpl.inc"
+}
+ClangSemaDeps = [
+  ":AttrTemplateInstantiate-inc",
+  ":AttrParsedAttrList-inc",
+  ":AttrParsedAttrKinds-inc",
+  ":AttrSpellingListIndex-inc",
+  ":AttrParsedAttrImpl-inc",
+]
+
+# tools/clang/tools/dxcompiler/CMakeLists.txt
+# TODO: hctgen template
 
 shared_library("dxcompiler") {
   if (dawn_has_build) {
@@ -723,9 +890,10 @@ shared_library("dxcompiler") {
     "//build/config/win:unicode"
   ]
 
-  deps = [
-    ":DiagnosticCommonKinds-inc",
-  ]
+  deps = []
+  deps += ClangBasicDeps
+  deps += ClangASTDeps
+  deps += ClangSemaDeps
 
   include_dirs = [
     # TODO(amaiorano): Maybe move to common_config?
