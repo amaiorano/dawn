@@ -872,6 +872,31 @@ ClangSemaDeps = [
   ":AttrParsedAttrImpl-inc",
 ]
 
+action("dxcetw-h") {
+  script = "build/run_system_binary.py"
+  manifest = "${dawn_dxc_dir}/include/dxc/tracing/dxcetw.man"
+  sources = [
+    manifest
+  ]
+  gen_output_dir = "$target_gen_dir/include/dxc/tracing/dxcetw"
+  gen_output = "${gen_output_dir}/dxcetw.h"
+  outputs = [
+    gen_output,
+    "${gen_output_dir}/dxcetw.rc",
+    "${gen_output_dir}/dxcetwTEMP.bin",
+    # Note: CMake copies from tmpdxcetw_MSG00001.bin to MSG00001.bin,
+    # but we don't copy, so we get the default output name. Is this okay?
+    "${gen_output_dir}/dxcetw_MSG00001.bin",
+  ]
+  args = [
+    "mc",
+    "-r", rebase_path(gen_output_dir, root_build_dir),
+    "-h", rebase_path(gen_output_dir, root_build_dir),
+    "-p", "DxcEtw_", "-um", "-z", "dxcetw",
+    rebase_path(manifest, root_build_dir),
+  ]
+}
+
 # cmake/modules/HCT.cmake
 # TODO(amaiorano): Move to add_hlsl_hctgen.gni
 template("add_hlsl_hctgen") {
@@ -910,6 +935,12 @@ add_hlsl_hctgen("DxcDisassembler-inc") {
   output = "/tools/clang/tools/dxcompiler/DxcDisassembler.inc"
   build_dir = true
 }
+# include/dxc/HLSL/CMakeLists.txt
+add_hlsl_hctgen("DxilValidation-inc") {
+  mode = "DxilValidationInc"
+  output = "/include/dxc/HLSL/DxilValidation.inc"
+  build_dir = true
+}
 
 shared_library("dxcompiler") {
   if (dawn_has_build) {
@@ -926,7 +957,10 @@ shared_library("dxcompiler") {
     "//build/config/win:unicode"
   ]
 
-  deps = [":DxcDisassembler-inc"]
+  deps = [
+    ":DxcDisassembler-inc",
+    ":DxilValidation-inc",
+    ]
   deps += ClangBasicDeps
   deps += ClangASTDeps
   deps += ClangSemaDeps
@@ -934,8 +968,17 @@ shared_library("dxcompiler") {
   include_dirs = [
     # TODO(amaiorano): Maybe move to common_config?
     "${target_gen_dir}/tools/clang/include", # Generated files
-    "${target_gen_dir}/tools/clang/tools/dxcompiler", # Generated files    
+    "${target_gen_dir}/tools/clang/tools/dxcompiler", # Generated files   
   ]
+  
+  if (is_win) {
+    deps += [
+      ":dxcetw-h",
+    ]
+    include_dirs += [
+      "$target_gen_dir/include/dxc/tracing/dxcetw", # dxcetw-h
+    ]
+  }
 
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcapi.cpp",
