@@ -361,6 +361,7 @@ config("common_config") {
       "-Wno-unreachable-code",
       "-Wno-switch",
       "-Wno-constant-logical-operand",
+      "-Wno-microsoft-exception-spec",
     ]
 
     cflags_cc = [
@@ -977,6 +978,31 @@ add_hlsl_hctgen("DxilValidation-inc") {
   output = "/include/dxc/HLSL/DxilValidation.inc"
   build_dir = true
 }
+# lib/HLSL/CMakeLists.txt
+add_hlsl_hctgen("DxcOptimizer-inc") {
+  mode = "DxcOptimizer"
+  output = "/lib/HLSL/DxcOptimizer.inc"
+  build_dir = true
+}
+add_hlsl_hctgen("DxilValidationImpl-inc") {
+  mode = "DxilValidation"
+  output = "/lib/HLSL/DxilValidationImpl.inc"
+  build_dir = true
+}
+
+# tools/clang/CMakeLists.txt
+write_cmake_config("clang-basic-version-inc") {
+  input = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Version.inc.in"
+  output = "$target_gen_dir/tools/clang/include/clang/Basic/Version.inc"
+  values = [
+    # TODO(amaiorano): Not sure if this is right, or even if it matters.
+    "CLANG_VERSION=$llvm_version",
+    "CLANG_VERSION_MAJOR=$llvm_version_major",
+    "CLANG_VERSION_MINOR=$llvm_version_minor",    
+    "CLANG_VERSION_PATCHLEVEL=$llvm_version_patch",
+    "CLANG_HAS_VERSION_PATCHLEVEL=1",
+  ]
+}
 
 shared_library("dxcompiler") {
   if (dawn_has_build) {
@@ -986,7 +1012,7 @@ shared_library("dxcompiler") {
 
   public_configs = [
     ":common_config"
-  ]  
+  ]
   
   configs -= [
     # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
@@ -994,9 +1020,14 @@ shared_library("dxcompiler") {
   ]
 
   deps = [
+    ":DxcSupport",
     ":hlsl_dxcversion_autogen",
+    ":clang-basic-version-inc",
     ":DxcDisassembler-inc",
     ":DxilValidation-inc",
+    ":DxcOptimizer-inc",
+    ":DxilValidationImpl-inc",
+    # ":libclang",
     ]
   deps += ClangBasicDeps
   deps += ClangASTDeps
@@ -1004,8 +1035,9 @@ shared_library("dxcompiler") {
 
   include_dirs = [
     "${target_gen_dir}/utils/version", # hlsl_dxcversion_autogen
-    "${target_gen_dir}/tools/clang/include", # Generated files
-    "${target_gen_dir}/tools/clang/tools/dxcompiler", # Generated files
+    "${target_gen_dir}/tools/clang/include",
+    "${target_gen_dir}/tools/clang/tools/dxcompiler",
+    "${target_gen_dir}/lib/HLSL"
   ]
   
   if (is_win) {
@@ -1016,6 +1048,12 @@ shared_library("dxcompiler") {
       "$target_gen_dir/include/dxc/tracing/dxcetw", # dxcetw-h
     ]
   }
+
+  defines = [
+    "DXC_API_IMPORT=", # Don't import locally defined symbols
+    "CINDEX_LINKAGE=",
+    "LIBCLANG_CC=",
+  ]
 
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcapi.cpp",
@@ -1031,6 +1069,82 @@ shared_library("dxcompiler") {
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcvalidator.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxclinker.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcshadersourceinfo.cpp",
+
+    "${dawn_dxc_dir}/lib/HLSL/ComputeViewIdState.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/ComputeViewIdStateBuilder.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/ControlDependence.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilCondenseResources.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilContainerReflection.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilConvergent.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilEliminateOutputDynamicIndexing.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilExpandTrigIntrinsics.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilGenerationPass.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilLegalizeEvalOperations.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilLegalizeSampleOffsetPass.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilLinker.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilLoopDeletion.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilPrecisePropagatePass.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilPreparePasses.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilPromoteResourcePasses.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilPackSignatureElement.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilPatchShaderRecordBindings.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilNoops.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilPreserveAllOutputs.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilRenameResourcesPass.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilSimpleGVNHoist.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilSignatureValidation.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilTargetLowering.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilTargetTransformInfo.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilTranslateRawBuffer.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilExportMap.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilValidation.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxcOptimizer.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLDeadFunctionElimination.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLExpandStoreIntrinsics.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLLegalizeParameter.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLLowerUDT.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLMatrixBitcastLowerPass.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLMatrixLowerPass.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLMatrixSubscriptUseReplacer.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLMatrixType.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLMetadataPasses.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLModule.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLOperations.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLOperationLower.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLOperationLowerExtension.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLPreprocess.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLResource.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLSignatureLower.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/HLUtil.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/PauseResumePasses.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/WaveSensitivityAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilNoOptLegalize.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilPoisonValues.cpp",
+    "${dawn_dxc_dir}/lib/HLSL/DxilDeleteRedundantDebugValues.cpp",    
+
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndex.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexCXX.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexCodeCompletion.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexDiagnostic.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexHigh.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexInclusionStack.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexUSRs.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexer.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CXComment.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CXCursor.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CXCompilationDatabase.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CXLoadedDiagnostic.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CXSourceLocation.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CXStoredDiagnostic.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CXString.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/CXType.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/IndexBody.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/IndexDecl.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/IndexTypeSourceInfo.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/Indexing.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/IndexingContext.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcisenseimpl.cpp", # HLSL Change
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcrewriteunused.cpp", # HLSL Change
   ]
   if (is_win) {
     # TODO(amaiorano): Create action that does like C:\src\external\DirectXShaderCompiler2\include\dxc\Tracing\CMakeLists.txt
