@@ -371,6 +371,9 @@ config("common_config") {
       "-Wno-unused-lambda-capture",
       "-Wno-bool-conversion",
       "-Wno-enum-compare",
+      "-Wno-deprecated-copy",
+      "-Wno-unused-variable",
+      "-Wno-microsoft-template",
     ]
 
     cflags_cc = [
@@ -730,7 +733,7 @@ clang_tablegen("AttrList-inc") {
   output_name = "/tools/clang/include/clang/Basic/AttrList.inc"
 }
 clang_tablegen("AttrHasAttributeImpl-inc") {
-  args = ["-gen-clang-attr-list", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  args = ["-gen-clang-attr-has-attribute-impl", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
   td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
   output_name = "/tools/clang/include/clang/Basic/AttrHasAttributeImpl.inc"
 }
@@ -1023,61 +1026,58 @@ write_cmake_config("clang-config-h") {
   ]
 }
 
-shared_library("dxcompiler") {
-  if (dawn_has_build) {
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
+# Template used to split up source_sets from multiple directories with name collisions.
+template("dxcompiler_sourceset") {
+  source_set(target_name) {
+    forward_variables_from(invoker, ["sources"])
+    
+    public_configs = [
+      ":common_config"
+    ]
+    
+    deps = [
+      ":DxcSupport",
+      ":dxclib",
+      ":hlsl_dxcversion_autogen",
+      ":clang-config-h",
+      ":clang-basic-version-inc",
+      ":clang-Driver-Options-inc",
+      ":gen_intrin_main_tables_15-h",
+      ":DxcDisassembler-inc",
+      ":DxilValidation-inc",
+      ":DxcOptimizer-inc",
+      ":DxilValidationImpl-inc",
+      ]
+    deps += ClangBasicDeps
+    deps += ClangASTDeps
+    deps += ClangSemaDeps
+
+    include_dirs = [
+      "${target_gen_dir}/utils/version", # hlsl_dxcversion_autogen
+      "${target_gen_dir}/tools/clang/include",
+      "${target_gen_dir}/tools/clang/tools/dxcompiler",
+      "${target_gen_dir}/tools/clang/lib/Sema",
+      "${target_gen_dir}/lib/HLSL"
+    ]
+    
+    if (is_win) {
+      deps += [
+        ":dxcetw-h",
+      ]
+      include_dirs += [
+        "$target_gen_dir/include/dxc/tracing/dxcetw", # dxcetw-h
+      ]
+    }
+
+    defines = [
+      "DXC_API_IMPORT=", # Don't import locally defined symbols
+      "CINDEX_LINKAGE=",
+      "LIBCLANG_CC=",
+    ]
   }
+}
 
-  public_configs = [
-    ":common_config"
-  ]
-  
-  configs -= [
-    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
-    "//build/config/win:unicode"
-  ]
-
-  deps = [
-    ":DxcSupport",
-    ":dxclib",
-    ":hlsl_dxcversion_autogen",
-    ":clang-config-h",
-    ":clang-basic-version-inc",
-    ":clang-Driver-Options-inc",
-    ":gen_intrin_main_tables_15-h",
-    ":DxcDisassembler-inc",
-    ":DxilValidation-inc",
-    ":DxcOptimizer-inc",
-    ":DxilValidationImpl-inc",
-    ]
-  deps += ClangBasicDeps
-  deps += ClangASTDeps
-  deps += ClangSemaDeps
-
-  include_dirs = [
-    "${target_gen_dir}/utils/version", # hlsl_dxcversion_autogen
-    "${target_gen_dir}/tools/clang/include",
-    "${target_gen_dir}/tools/clang/tools/dxcompiler",
-    "${target_gen_dir}/tools/clang/lib/Sema",
-    "${target_gen_dir}/lib/HLSL"
-  ]
-  
-  if (is_win) {
-    deps += [
-      ":dxcetw-h",
-    ]
-    include_dirs += [
-      "$target_gen_dir/include/dxc/tracing/dxcetw", # dxcetw-h
-    ]
-  }
-
-  defines = [
-    "DXC_API_IMPORT=", # Don't import locally defined symbols
-    "CINDEX_LINKAGE=",
-    "LIBCLANG_CC=",
-  ]
-
+dxcompiler_sourceset("dxcompiler_sources_1") {
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcapi.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcassembler.cpp",
@@ -1193,55 +1193,6 @@ shared_library("dxcompiler") {
     "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSymbols.cpp",
 
     "${dawn_dxc_dir}/lib/DxcBindingTable/DxcBindingTable.cpp",
-
-    "${dawn_dxc_dir}/lib/IR/AsmWriter.cpp",
-    "${dawn_dxc_dir}/lib/IR/Attributes.cpp",
-    "${dawn_dxc_dir}/lib/IR/AutoUpgrade.cpp",
-    "${dawn_dxc_dir}/lib/IR/BasicBlock.cpp",
-    "${dawn_dxc_dir}/lib/IR/Comdat.cpp",
-    "${dawn_dxc_dir}/lib/IR/ConstantFold.cpp",
-    "${dawn_dxc_dir}/lib/IR/ConstantRange.cpp",
-    "${dawn_dxc_dir}/lib/IR/Constants.cpp",
-    "${dawn_dxc_dir}/lib/IR/Core.cpp",
-    "${dawn_dxc_dir}/lib/IR/DIBuilder.cpp",
-    "${dawn_dxc_dir}/lib/IR/DataLayout.cpp",
-    "${dawn_dxc_dir}/lib/IR/DebugInfo.cpp",
-    "${dawn_dxc_dir}/lib/IR/DebugInfoMetadata.cpp",
-    "${dawn_dxc_dir}/lib/IR/DebugLoc.cpp",
-    "${dawn_dxc_dir}/lib/IR/DiagnosticInfo.cpp",
-    "${dawn_dxc_dir}/lib/IR/DiagnosticPrinter.cpp",
-    "${dawn_dxc_dir}/lib/IR/Dominators.cpp",
-    "${dawn_dxc_dir}/lib/IR/Function.cpp",
-    "${dawn_dxc_dir}/lib/IR/GCOV.cpp",
-    "${dawn_dxc_dir}/lib/IR/GVMaterializer.cpp",
-    "${dawn_dxc_dir}/lib/IR/Globals.cpp",
-    "${dawn_dxc_dir}/lib/IR/IRBuilder.cpp",
-    "${dawn_dxc_dir}/lib/IR/IRPrintingPasses.cpp",
-    "${dawn_dxc_dir}/lib/IR/InlineAsm.cpp",
-    "${dawn_dxc_dir}/lib/IR/Instruction.cpp",
-    "${dawn_dxc_dir}/lib/IR/Instructions.cpp",
-    "${dawn_dxc_dir}/lib/IR/IntrinsicInst.cpp",
-    "${dawn_dxc_dir}/lib/IR/LLVMContext.cpp",
-    "${dawn_dxc_dir}/lib/IR/LLVMContextImpl.cpp",
-    "${dawn_dxc_dir}/lib/IR/LegacyPassManager.cpp",
-    "${dawn_dxc_dir}/lib/IR/MDBuilder.cpp",
-    "${dawn_dxc_dir}/lib/IR/Mangler.cpp",
-    "${dawn_dxc_dir}/lib/IR/Metadata.cpp",
-    "${dawn_dxc_dir}/lib/IR/MetadataTracking.cpp",
-    "${dawn_dxc_dir}/lib/IR/Module.cpp",
-    "${dawn_dxc_dir}/lib/IR/Operator.cpp",
-    "${dawn_dxc_dir}/lib/IR/Pass.cpp",
-    "${dawn_dxc_dir}/lib/IR/PassManager.cpp",
-    "${dawn_dxc_dir}/lib/IR/PassRegistry.cpp",
-    "${dawn_dxc_dir}/lib/IR/Statepoint.cpp",
-    "${dawn_dxc_dir}/lib/IR/Type.cpp",
-    "${dawn_dxc_dir}/lib/IR/TypeFinder.cpp",
-    "${dawn_dxc_dir}/lib/IR/Use.cpp",
-    "${dawn_dxc_dir}/lib/IR/User.cpp",
-    "${dawn_dxc_dir}/lib/IR/Value.cpp",
-    "${dawn_dxc_dir}/lib/IR/ValueSymbolTable.cpp",
-    "${dawn_dxc_dir}/lib/IR/ValueTypes.cpp",
-    "${dawn_dxc_dir}/lib/IR/Verifier.cpp",
 
     "${dawn_dxc_dir}/lib/IRReader/IRReader.cpp",
 
@@ -1419,13 +1370,106 @@ shared_library("dxcompiler") {
     "${dawn_dxc_dir}/tools/clang/lib/Sema/SemaType.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Sema/TypeLocBuilder.cpp",
   ]
-  if (is_win) {
-    # TODO(amaiorano): Create action that does like C:\src\external\DirectXShaderCompiler2\include\dxc\Tracing\CMakeLists.txt
-    # sources += [
-    #   "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/DXCompiler.rc",
-    #   "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/DXCompiler.def",
-    # ]
+}
+
+dxcompiler_sourceset("dxcompiler_sources_2") {
+  sources = [
+    "${dawn_dxc_dir}/lib/IR/AsmWriter.cpp",
+    "${dawn_dxc_dir}/lib/IR/Attributes.cpp",
+    "${dawn_dxc_dir}/lib/IR/AutoUpgrade.cpp",
+    "${dawn_dxc_dir}/lib/IR/BasicBlock.cpp",
+    "${dawn_dxc_dir}/lib/IR/Comdat.cpp",
+    "${dawn_dxc_dir}/lib/IR/ConstantFold.cpp",
+    "${dawn_dxc_dir}/lib/IR/ConstantRange.cpp",
+    "${dawn_dxc_dir}/lib/IR/Constants.cpp",
+    "${dawn_dxc_dir}/lib/IR/Core.cpp",
+    "${dawn_dxc_dir}/lib/IR/DIBuilder.cpp",
+    "${dawn_dxc_dir}/lib/IR/DataLayout.cpp",
+    "${dawn_dxc_dir}/lib/IR/DebugInfo.cpp",
+    "${dawn_dxc_dir}/lib/IR/DebugInfoMetadata.cpp",
+    "${dawn_dxc_dir}/lib/IR/DebugLoc.cpp",
+    "${dawn_dxc_dir}/lib/IR/DiagnosticInfo.cpp",
+    "${dawn_dxc_dir}/lib/IR/DiagnosticPrinter.cpp",
+    "${dawn_dxc_dir}/lib/IR/Dominators.cpp",
+    "${dawn_dxc_dir}/lib/IR/Function.cpp",
+    "${dawn_dxc_dir}/lib/IR/GCOV.cpp",
+    "${dawn_dxc_dir}/lib/IR/GVMaterializer.cpp",
+    "${dawn_dxc_dir}/lib/IR/Globals.cpp",
+    "${dawn_dxc_dir}/lib/IR/IRBuilder.cpp",
+    "${dawn_dxc_dir}/lib/IR/IRPrintingPasses.cpp",
+    "${dawn_dxc_dir}/lib/IR/InlineAsm.cpp",
+    "${dawn_dxc_dir}/lib/IR/Instruction.cpp",
+    "${dawn_dxc_dir}/lib/IR/Instructions.cpp",
+    "${dawn_dxc_dir}/lib/IR/IntrinsicInst.cpp",
+    "${dawn_dxc_dir}/lib/IR/LLVMContext.cpp",
+    "${dawn_dxc_dir}/lib/IR/LLVMContextImpl.cpp",
+    "${dawn_dxc_dir}/lib/IR/LegacyPassManager.cpp",
+    "${dawn_dxc_dir}/lib/IR/MDBuilder.cpp",
+    "${dawn_dxc_dir}/lib/IR/Mangler.cpp",
+    "${dawn_dxc_dir}/lib/IR/Metadata.cpp",
+    "${dawn_dxc_dir}/lib/IR/MetadataTracking.cpp",
+    "${dawn_dxc_dir}/lib/IR/Module.cpp",
+    "${dawn_dxc_dir}/lib/IR/Operator.cpp",
+    "${dawn_dxc_dir}/lib/IR/Pass.cpp",
+    "${dawn_dxc_dir}/lib/IR/PassManager.cpp",
+    "${dawn_dxc_dir}/lib/IR/PassRegistry.cpp",
+    "${dawn_dxc_dir}/lib/IR/Statepoint.cpp",
+    "${dawn_dxc_dir}/lib/IR/Type.cpp",
+    "${dawn_dxc_dir}/lib/IR/TypeFinder.cpp",
+    "${dawn_dxc_dir}/lib/IR/Use.cpp",
+    "${dawn_dxc_dir}/lib/IR/User.cpp",
+    "${dawn_dxc_dir}/lib/IR/Value.cpp",
+    "${dawn_dxc_dir}/lib/IR/ValueSymbolTable.cpp",
+    "${dawn_dxc_dir}/lib/IR/ValueTypes.cpp",
+    "${dawn_dxc_dir}/lib/IR/Verifier.cpp",
+  ]
+}
+
+dxcompiler_sourceset("dxcompiler_sources_3") {
+  sources = [
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/Attributes.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/Builtins.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/CharInfo.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/Diagnostic.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/DiagnosticIDs.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/DiagnosticOptions.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/FileManager.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/FileSystemStatCache.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/IdentifierTable.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/LangOptions.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/Module.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/ObjCRuntime.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/OpenMPKinds.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/OperatorPrecedence.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/SanitizerBlacklist.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/Sanitizers.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/SourceLocation.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/SourceManager.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/TargetInfo.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/Targets.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/TokenKinds.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/Version.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/VersionTuple.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/VirtualFileSystem.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Basic/Warnings.cpp",    
+  ]
+}
+
+shared_library("dxcompiler") {
+  if (dawn_has_build) {
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
   }
+  configs -= [
+    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
+    "//build/config/win:unicode"
+  ]
+
+  deps = [
+    ":dxcompiler_sources_1",
+    ":dxcompiler_sources_2",
+    ":dxcompiler_sources_3",
+  ]
 }
 
 executable("dxc") {
