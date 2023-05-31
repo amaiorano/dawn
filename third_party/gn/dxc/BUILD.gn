@@ -863,6 +863,13 @@ ClangSemaDeps = [
   ":AttrParsedAttrImpl-inc",
 ]
 
+# tools/clang/include/clang/Parse/CMakeLists.txt
+clang_tablegen("AttrParserStringSwitches-inc") {
+  args = ["-gen-clang-attr-parser-string-switches", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Parse/AttrParserStringSwitches.inc"
+}
+
 # tools/clang/include/clang/Driver/CMakeLists.txt
 tablegen("clang-Driver-Options-inc") {
   args = ["-gen-opt-parser-defs"]
@@ -992,6 +999,13 @@ add_hlsl_hctgen("gen_intrin_main_tables_15-h") {
   output = "/tools/clang/lib/Sema/gen_intrin_main_tables_15.h"
   build_dir = true
 }
+# lib/DxilPIXPasses/CMakeLists.txt
+add_hlsl_hctgen("DxilPIXPasses-inc") {
+  mode = "DxilPIXPasses"
+  output = "/lib/DxilPIXPasses/DxilPIXPasses.inc"
+  build_dir = true
+}
+
 
 # tools/clang/CMakeLists.txt
 write_cmake_config("clang-basic-version-inc") {
@@ -1047,6 +1061,8 @@ template("dxcompiler_sourceset") {
       ":DxilValidation-inc",
       ":DxcOptimizer-inc",
       ":DxilValidationImpl-inc",
+      ":DxilPIXPasses-inc",
+      ":AttrParserStringSwitches-inc",
       ]
     deps += ClangBasicDeps
     deps += ClangASTDeps
@@ -1057,7 +1073,8 @@ template("dxcompiler_sourceset") {
       "${target_gen_dir}/tools/clang/include",
       "${target_gen_dir}/tools/clang/tools/dxcompiler",
       "${target_gen_dir}/tools/clang/lib/Sema",
-      "${target_gen_dir}/lib/HLSL"
+      "${target_gen_dir}/lib/HLSL",
+      "${target_gen_dir}/lib/DxilPIXPasses",
     ]
     
     if (is_win) {
@@ -1369,6 +1386,265 @@ dxcompiler_sourceset("dxcompiler_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Sema/SemaTemplateVariadic.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Sema/SemaType.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Sema/TypeLocBuilder.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/HeaderMap.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/HeaderSearch.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/HLSLMacroExpander.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/Lexer.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/LiteralSupport.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/MacroArgs.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/MacroInfo.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/ModuleMap.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PPCaching.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PPCallbacks.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PPConditionalDirectiveRecord.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PPDirectives.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PPExpressions.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PPLexerChange.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PPMacroExpansion.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PTHLexer.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/Pragma.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PreprocessingRecord.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/Preprocessor.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/PreprocessorLexer.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/ScratchBuffer.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/TokenConcatenation.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Lex/TokenLexer.cpp",
+    
+    "${dawn_dxc_dir}/lib/DxilRootSignature/DxilRootSignature.cpp",
+    "${dawn_dxc_dir}/lib/DxilRootSignature/DxilRootSignatureConvert.cpp",
+    "${dawn_dxc_dir}/lib/DxilRootSignature/DxilRootSignatureSerializer.cpp",
+    "${dawn_dxc_dir}/lib/DxilRootSignature/DxilRootSignatureValidator.cpp",
+
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilAddPixelHitInstrumentation.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilAnnotateWithVirtualRegister.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilDbgValueToDbgDeclare.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilDebugInstrumentation.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilForceEarlyZ.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilOutputColorBecomesConstant.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilPIXMeshShaderOutputInstrumentation.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilRemoveDiscards.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilReduceMSAAToSingleSample.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilShaderAccessTracking.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilPIXPasses.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilPIXVirtualRegisters.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/PixPassHelpers.cpp",
+    "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilPIXAddTidToAmplificationShaderPayload.cpp",
+
+    "${dawn_dxc_dir}/lib/DxilCompression/DxilCompression.cpp",
+    "${dawn_dxc_dir}/lib/DxilCompression/miniz.c",
+
+    "${dawn_dxc_dir}/lib/Analysis/IPA/CallGraph.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/IPA/CallGraphSCCPass.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/IPA/CallPrinter.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/IPA/GlobalsModRef.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/IPA/IPA.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/IPA/InlineCost.cpp",
+    
+    "${dawn_dxc_dir}/lib/Analysis/AliasAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/AliasAnalysisCounter.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/AliasAnalysisEvaluator.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/AliasDebugger.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/AliasSetTracker.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/Analysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/AssumptionCache.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/BasicAliasAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/BlockFrequencyInfo.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/BlockFrequencyInfoImpl.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/BranchProbabilityInfo.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/CFG.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/CFGPrinter.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/CFLAliasAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/CGSCCPassManager.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/CaptureTracking.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/CostModel.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/CodeMetrics.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ConstantFolding.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/Delinearization.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/DependenceAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/DivergenceAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/DomPrinter.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/DominanceFrontier.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/DxilConstantFolding.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/DxilConstantFoldingExt.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/DxilSimplify.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/DxilValueCache.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/IVUsers.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/InstCount.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/InstructionSimplify.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/Interval.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/IntervalPartition.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/IteratedDominanceFrontier.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/LazyCallGraph.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/LazyValueInfo.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/LibCallAliasAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/LibCallSemantics.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/Lint.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/Loads.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/LoopAccessAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/LoopInfo.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/LoopPass.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/MemDepPrinter.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/MemDerefPrinter.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/MemoryBuiltins.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/MemoryDependenceAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/MemoryLocation.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ModuleDebugInfoPrinter.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/NoAliasAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/PHITransAddr.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/PostDominators.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/PtrUseVisitor.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ReducibilityAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/regioninfo.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/RegionPass.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/regionprinter.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ScalarEvolution.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ScalarEvolutionAliasAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ScalarEvolutionExpander.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ScalarEvolutionNormalization.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/SparsePropagation.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/TargetLibraryInfo.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/TargetTransformInfo.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/Trace.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/TypeBasedAliasAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ScopedNoAliasAA.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/ValueTracking.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/VectorUtils.cpp",
+    "${dawn_dxc_dir}/lib/Analysis/VectorUtils2.cpp",
+
+    "${dawn_dxc_dir}/lib/Bitcode/Reader/BitcodeReader.cpp",
+    "${dawn_dxc_dir}/lib/Bitcode/Reader/BitstreamReader.cpp",
+
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/ADCE.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/AlignmentFromAssumptions.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/BDCE.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/ConstantHoisting.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/ConstantProp.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/CorrelatedValuePropagation.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DCE.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DeadStoreElimination.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/EarlyCSE.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/FlattenCFGPass.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/Float2Int.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/GVN.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/HoistConstantArray.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/InductiveRangeCheckElimination.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/IndVarSimplify.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/JumpThreading.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LICM.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoadCombine.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopDeletion.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopDistribute.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopIdiomRecognize.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopInstSimplify.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopInterchange.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopRerollPass.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopRotation.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopStrengthReduce.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopUnrollPass.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LoopUnswitch.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LowerAtomic.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LowerExpectIntrinsic.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/LowerTypePasses.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/MemCpyOptimizer.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/MergedLoadStoreMotion.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/NaryReassociate.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/PartiallyInlineLibCalls.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/PlaceSafepoints.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/Reassociate.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/Reg2Mem.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/Reg2MemHLSL.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/RewriteStatepointsForGC.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/SCCP.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/SROA.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/SampleProfile.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/Scalar.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/ScalarReplAggregates.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/ScalarReplAggregatesHLSL.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DxilLoopUnroll.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DxilRemoveDeadBlocks.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DxilEraseDeadRegion.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DxilFixConstArrayInitializer.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DxilEliminateVector.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DxilConditionalMem2Reg.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/DxilRemoveUnstructuredLoopExits.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/Scalarizer.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/SeparateConstOffsetFromGEP.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/SimplifyCFGPass.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/Sink.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/SpeculativeExecution.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/StraightLineStrengthReduce.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/StructurizeCFG.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/Scalar/TailRecursionElimination.cpp",
+
+    "${dawn_dxc_dir}/lib/Transforms/IPO/BarrierNoopPass.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/ConstantMerge.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/DeadArgumentElimination.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/ElimAvailExtern.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/ExtractGV.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/FunctionAttrs.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/GlobalDCE.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/GlobalOpt.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/IPConstantPropagation.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/IPO.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/InlineAlways.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/InlineSimple.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/Inliner.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/Internalize.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/LoopExtractor.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/LowerBitSets.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/MergeFunctions.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/PartialInlining.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/PassManagerBuilder.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/PruneEH.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/StripDeadPrototypes.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/IPO/StripSymbols.cpp",
+
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstructionCombining.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineAddSub.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineAndOrXor.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineCalls.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineCasts.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineCompares.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineLoadStoreAlloca.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineMulDivRem.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombinePHI.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineSelect.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineShifts.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineSimplifyDemanded.cpp",
+    "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineVectorOps.cpp",
+
+    "${dawn_dxc_dir}/lib/PassPrinters/PassPrinters.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Index/CommentToXML.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Index/USRGeneration.cpp",
+    
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/ArgumentsAdjusters.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/CommonOptionsParser.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/CompilationDatabase.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/FileMatchTrie.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/JSONCompilationDatabase.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/Refactoring.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/RefactoringCallbacks.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/Tooling.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseAST.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseCXXInlineMethods.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseDecl.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseDeclCXX.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseExpr.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseExprCXX.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseInit.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseObjc.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseOpenMP.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParsePragma.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseStmt.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseStmtAsm.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseTemplate.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseTentative.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/Parser.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseHLSL.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Parse/HLSLRootSignature.cpp",
   ]
 }
 
@@ -1452,6 +1728,64 @@ dxcompiler_sourceset("dxcompiler_sources_3") {
     "${dawn_dxc_dir}/tools/clang/lib/Basic/VersionTuple.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Basic/VirtualFileSystem.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Basic/Warnings.cpp",    
+
+    "${dawn_dxc_dir}/tools/clang/lib/AST/APValue.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ASTConsumer.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ASTContext.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ASTContextHLSL.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ASTDiagnostic.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ASTDumper.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ASTImporter.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ASTTypeTraits.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/AttrImpl.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/CXXInheritance.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/Comment.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/CommentBriefParser.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/CommentCommandTraits.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/CommentLexer.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/CommentParser.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/CommentSema.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/Decl.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclarationName.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclBase.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclCXX.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclFriend.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclGroup.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclObjC.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclOpenMP.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclPrinter.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/DeclTemplate.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/Expr.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ExprClassification.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ExprConstant.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ExprCXX.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ExternalASTSource.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/HlslBuiltinTypeDeclBuilder.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/HlslTypes.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/InheritViz.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ItaniumCXXABI.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ItaniumMangle.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/Mangle.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/MicrosoftCXXABI.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/MicrosoftMangle.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/NestedNameSpecifier.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/ParentMap.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/RawCommentList.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/RecordLayout.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/RecordLayoutBuilder.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/SelectorLocationsKind.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/Stmt.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/StmtIterator.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/StmtPrinter.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/StmtProfile.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/StmtViz.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/TemplateBase.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/TemplateName.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/Type.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/TypeLoc.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/TypePrinter.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/VTableBuilder.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/AST/VTTBuilder.cpp",
   ]
 }
 
@@ -1460,10 +1794,8 @@ shared_library("dxcompiler") {
     configs -= [ "//build/config/compiler:chromium_code" ]
     configs += [ "//build/config/compiler:no_chromium_code" ]
   }
-  configs -= [
-    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
-    "//build/config/win:unicode"
-  ]
+  # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
+  configs -= [ "//build/config/win:unicode" ]
 
   deps = [
     ":dxcompiler_sources_1",
@@ -1477,7 +1809,6 @@ executable("dxc") {
     configs -= [ "//build/config/compiler:chromium_code" ]
     configs += [ "//build/config/compiler:no_chromium_code" ]
   }
-
   # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
   configs -= [ "//build/config/win:unicode" ]
 
@@ -1485,9 +1816,7 @@ executable("dxc") {
     ":dxclib",
     # ":dxcompiler",
   ]
-  # include_dirs = [
-  #   "${dawn_dxc_dir}/include",
-  #  ]
+  
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxc/dxcmain.cpp",
     
