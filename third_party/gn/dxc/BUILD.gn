@@ -362,12 +362,15 @@ config("common_config") {
       "-Wno-switch",
       "-Wno-constant-logical-operand",
       "-Wno-microsoft-exception-spec",
+      "-Wno-inconsistent-missing-override",
+      "-Wno-enum-compare-conditional",
     ]
 
     cflags_cc = [
       "/EHsc", # DXC uses exceptions
       "/std:c++17", # TODO(amaiorano): Not sure I need this
       "/Zc:__cplusplus",
+      "/Zc:twoPhase-", # DXC source relies on MSVC's non-conforming two-phase lookup
     ] + warning_flags
 
     cflags_c = [
@@ -606,16 +609,12 @@ tablegen("Intrinsics-td") {
   tblgen_target = ":llvm-tblgen"
 }
 
+# This target contains common code shared by both 'dxc' and 'dxcompiler' targets
 static_library("dxclib") {
   public_configs = [
     ":common_config"
   ]
   
-  configs -= [
-    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
-    "//build/config/win:unicode"
-  ]
-
   public_deps = [
     ":DataTypes-header",
     ":Support",
@@ -623,8 +622,6 @@ static_library("dxclib") {
     ":Intrinsics-td",
   ]
   sources = [
-    "${dawn_dxc_dir}/tools/clang/tools/dxclib/dxc.cpp",
-
     "${dawn_dxc_dir}/lib/DxilContainer/DxilContainer.cpp",
     "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerAssembler.cpp",
     "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerReader.cpp",
@@ -656,11 +653,6 @@ static_library("dxclib") {
     "${dawn_dxc_dir}/lib/DXIL/DxilUtil.cpp",
     "${dawn_dxc_dir}/lib/DXIL/DxilUtilDbgInfoAndMisc.cpp",
     "${dawn_dxc_dir}/lib/DXIL/DxilPDB.cpp",
-
-    "${dawn_dxc_dir}/lib/Option/Arg.cpp",
-    "${dawn_dxc_dir}/lib/Option/ArgList.cpp",
-    "${dawn_dxc_dir}/lib/Option/Option.cpp",
-    "${dawn_dxc_dir}/lib/Option/OptTable.cpp",
   ]
 }
 
@@ -1021,13 +1013,13 @@ shared_library("dxcompiler") {
 
   deps = [
     ":DxcSupport",
+    ":dxclib",
     ":hlsl_dxcversion_autogen",
     ":clang-basic-version-inc",
     ":DxcDisassembler-inc",
     ":DxilValidation-inc",
     ":DxcOptimizer-inc",
     ":DxilValidationImpl-inc",
-    # ":libclang",
     ]
   deps += ClangBasicDeps
   deps += ClangASTDeps
@@ -1145,6 +1137,79 @@ shared_library("dxcompiler") {
     "${dawn_dxc_dir}/tools/clang/tools/libclang/IndexingContext.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcisenseimpl.cpp", # HLSL Change
     "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcrewriteunused.cpp", # HLSL Change
+
+    "${dawn_dxc_dir}/lib/DxilDia/DxcPixCompilationInfo.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxcPixDxilDebugInfo.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxcPixDxilStorage.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxcPixEntrypoints.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxcPixLiveVariables.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxcPixLiveVariables_FragmentIterator.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxcPixTypes.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxcPixVariables.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDia.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaDataSource.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaEnumTables.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaSession.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaSymbolManager.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTable.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableFrameData.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableInjectedSources.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableInputAssemblyFile.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableLineNumbers.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSections.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSegmentMap.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSourceFiles.cpp",
+    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSymbols.cpp",
+
+    "${dawn_dxc_dir}/lib/IR/AsmWriter.cpp",
+    "${dawn_dxc_dir}/lib/IR/Attributes.cpp",
+    "${dawn_dxc_dir}/lib/IR/AutoUpgrade.cpp",
+    "${dawn_dxc_dir}/lib/IR/BasicBlock.cpp",
+    "${dawn_dxc_dir}/lib/IR/Comdat.cpp",
+    "${dawn_dxc_dir}/lib/IR/ConstantFold.cpp",
+    "${dawn_dxc_dir}/lib/IR/ConstantRange.cpp",
+    "${dawn_dxc_dir}/lib/IR/Constants.cpp",
+    "${dawn_dxc_dir}/lib/IR/Core.cpp",
+    "${dawn_dxc_dir}/lib/IR/DIBuilder.cpp",
+    "${dawn_dxc_dir}/lib/IR/DataLayout.cpp",
+    "${dawn_dxc_dir}/lib/IR/DebugInfo.cpp",
+    "${dawn_dxc_dir}/lib/IR/DebugInfoMetadata.cpp",
+    "${dawn_dxc_dir}/lib/IR/DebugLoc.cpp",
+    "${dawn_dxc_dir}/lib/IR/DiagnosticInfo.cpp",
+    "${dawn_dxc_dir}/lib/IR/DiagnosticPrinter.cpp",
+    "${dawn_dxc_dir}/lib/IR/Dominators.cpp",
+    "${dawn_dxc_dir}/lib/IR/Function.cpp",
+    "${dawn_dxc_dir}/lib/IR/GCOV.cpp",
+    "${dawn_dxc_dir}/lib/IR/GVMaterializer.cpp",
+    "${dawn_dxc_dir}/lib/IR/Globals.cpp",
+    "${dawn_dxc_dir}/lib/IR/IRBuilder.cpp",
+    "${dawn_dxc_dir}/lib/IR/IRPrintingPasses.cpp",
+    "${dawn_dxc_dir}/lib/IR/InlineAsm.cpp",
+    "${dawn_dxc_dir}/lib/IR/Instruction.cpp",
+    "${dawn_dxc_dir}/lib/IR/Instructions.cpp",
+    "${dawn_dxc_dir}/lib/IR/IntrinsicInst.cpp",
+    "${dawn_dxc_dir}/lib/IR/LLVMContext.cpp",
+    "${dawn_dxc_dir}/lib/IR/LLVMContextImpl.cpp",
+    "${dawn_dxc_dir}/lib/IR/LegacyPassManager.cpp",
+    "${dawn_dxc_dir}/lib/IR/MDBuilder.cpp",
+    "${dawn_dxc_dir}/lib/IR/Mangler.cpp",
+    "${dawn_dxc_dir}/lib/IR/Metadata.cpp",
+    "${dawn_dxc_dir}/lib/IR/MetadataTracking.cpp",
+    "${dawn_dxc_dir}/lib/IR/Module.cpp",
+    "${dawn_dxc_dir}/lib/IR/Operator.cpp",
+    "${dawn_dxc_dir}/lib/IR/Pass.cpp",
+    "${dawn_dxc_dir}/lib/IR/PassManager.cpp",
+    "${dawn_dxc_dir}/lib/IR/PassRegistry.cpp",
+    "${dawn_dxc_dir}/lib/IR/Statepoint.cpp",
+    "${dawn_dxc_dir}/lib/IR/Type.cpp",
+    "${dawn_dxc_dir}/lib/IR/TypeFinder.cpp",
+    "${dawn_dxc_dir}/lib/IR/Use.cpp",
+    "${dawn_dxc_dir}/lib/IR/User.cpp",
+    "${dawn_dxc_dir}/lib/IR/Value.cpp",
+    "${dawn_dxc_dir}/lib/IR/ValueSymbolTable.cpp",
+    "${dawn_dxc_dir}/lib/IR/ValueTypes.cpp",
+    "${dawn_dxc_dir}/lib/IR/Verifier.cpp",
+    
   ]
   if (is_win) {
     # TODO(amaiorano): Create action that does like C:\src\external\DirectXShaderCompiler2\include\dxc\Tracing\CMakeLists.txt
@@ -1161,14 +1226,24 @@ executable("dxc") {
     configs += [ "//build/config/compiler:no_chromium_code" ]
   }
 
+  # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
+  configs -= [ "//build/config/win:unicode" ]
+
   deps = [
     ":dxclib",
-    ":dxcompiler",
+    # ":dxcompiler",
   ]
   # include_dirs = [
   #   "${dawn_dxc_dir}/include",
   #  ]
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxc/dxcmain.cpp",
+    
+    "${dawn_dxc_dir}/tools/clang/tools/dxclib/dxc.cpp",
+
+    "${dawn_dxc_dir}/lib/Option/Arg.cpp",
+    "${dawn_dxc_dir}/lib/Option/ArgList.cpp",
+    "${dawn_dxc_dir}/lib/Option/Option.cpp",
+    "${dawn_dxc_dir}/lib/Option/OptTable.cpp",
   ]
 }
