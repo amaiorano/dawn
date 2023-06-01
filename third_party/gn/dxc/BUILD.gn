@@ -52,7 +52,7 @@ write_cmake_config("config-header") {
     "LLVM_INFODIR=",
     "LLVM_MANDIR=",
     "LLVM_NATIVE_ARCH=$native_target",
-    "LLVM_PREFIX=",
+    "LLVM_PREFIX=/usr/local", #TODO(amaiorano): Set this properly?
     "LLVM_VERSION_MAJOR=$llvm_version_major",
     "LLVM_VERSION_MINOR=$llvm_version_minor",
     "LLVM_VERSION_PATCH=$llvm_version_patch",
@@ -242,7 +242,7 @@ write_cmake_config("llvm-config-header") {
     "LLVM_INFODIR=",
     "LLVM_MANDIR=",
     "LLVM_NATIVE_ARCH=$native_target",
-    "LLVM_PREFIX=",
+    "LLVM_PREFIX=/usr/local", #TODO(amaiorano): Set this properly?
     "LLVM_USE_INTEL_JITEVENTS=",
     "LLVM_USE_OPROFILE=",
     "LLVM_VERSION_MAJOR=$llvm_version_major",
@@ -1048,6 +1048,9 @@ template("dxcompiler_sourceset") {
     public_configs = [
       ":common_config"
     ]
+
+    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
+    configs -= [ "//build/config/win:unicode" ]
     
     deps = [
       ":DxcSupport",
@@ -1645,6 +1648,28 @@ dxcompiler_sourceset("dxcompiler_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Parse/Parser.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseHLSL.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Parse/HLSLRootSignature.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Rewrite/DeltaTree.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Rewrite/HTMLRewrite.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Rewrite/RewriteRope.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Rewrite/Rewriter.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Rewrite/TokenRewriter.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Action.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Compilation.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/CrossWindowsToolChain.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Driver.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Job.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/MinGWToolChain.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Multilib.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/MSVCToolChain.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Phases.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/SanitizerArgs.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Tool.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/ToolChain.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/ToolChains.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Tools.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/Types.cpp",
   ]
 }
 
@@ -1698,6 +1723,10 @@ dxcompiler_sourceset("dxcompiler_sources_2") {
     "${dawn_dxc_dir}/lib/IR/ValueSymbolTable.cpp",
     "${dawn_dxc_dir}/lib/IR/ValueTypes.cpp",
     "${dawn_dxc_dir}/lib/IR/Verifier.cpp",
+
+    "${dawn_dxc_dir}/lib/AsmParser/LLLexer.cpp",
+    "${dawn_dxc_dir}/lib/AsmParser/LLParser.cpp",
+    "${dawn_dxc_dir}/lib/AsmParser/Parser.cpp",
   ]
 }
 
@@ -1794,8 +1823,6 @@ shared_library("dxcompiler") {
     configs -= [ "//build/config/compiler:chromium_code" ]
     configs += [ "//build/config/compiler:no_chromium_code" ]
   }
-  # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
-  configs -= [ "//build/config/win:unicode" ]
 
   deps = [
     ":dxcompiler_sources_1",
