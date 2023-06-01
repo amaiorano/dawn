@@ -376,6 +376,7 @@ config("common_config") {
       "-Wno-deprecated-copy",
       "-Wno-unused-variable",
       "-Wno-microsoft-template",
+      "-Wno-unused-private-field",
     ]
 
     cflags_cc = [
@@ -880,6 +881,18 @@ tablegen("clang-Driver-Options-inc") {
   tblgen_target = ":llvm-tblgen"
 }
 
+# tools/clang/include/clang/Serialization/CMakeLists.txt
+clang_tablegen("AttrPCHRead-inc") {
+  args = ["-gen-clang-attr-pch-read", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Serialization/AttrPCHRead.inc"
+}
+clang_tablegen("AttrPCHWrite-inc") {
+  args = ["-gen-clang-attr-pch-write", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
+  output_name = "/tools/clang/include/clang/Serialization/AttrPCHWrite.inc"
+}
+
 system_binary_action("dxcetw-h") {
   manifest = "${dawn_dxc_dir}/include/dxc/tracing/dxcetw.man"
   inputs = [
@@ -1067,6 +1080,8 @@ template("dxcompiler_sourceset") {
       ":DxilValidationImpl-inc",
       ":DxilPIXPasses-inc",
       ":AttrParserStringSwitches-inc",
+      ":AttrPCHRead-inc",
+      ":AttrPCHWrite-inc",
       ]
     deps += ClangBasicDeps
     deps += ClangASTDeps
@@ -1656,6 +1671,72 @@ dxcompiler_sourceset("dxcompiler_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Rewrite/Rewriter.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Rewrite/TokenRewriter.cpp",
 
+    "${dawn_dxc_dir}/tools/clang/lib/Driver/DriverOptions.cpp",
+    
+    "${dawn_dxc_dir}/tools/clang/lib/Edit/Commit.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Edit/EditedSource.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTCommon.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTReader.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTReaderDecl.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTReaderStmt.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTWriter.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTWriterDecl.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTWriterStmt.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/GeneratePCH.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/GlobalModuleIndex.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/Module.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Serialization/ModuleManager.cpp",
+ 
+    "${dawn_dxc_dir}/lib/Target/Target.cpp",
+    "${dawn_dxc_dir}/lib/Target/TargetIntrinsicInfo.cpp",
+    "${dawn_dxc_dir}/lib/Target/TargetLoweringObjectFile.cpp",
+    "${dawn_dxc_dir}/lib/Target/TargetMachine.cpp",
+    "${dawn_dxc_dir}/lib/Target/TargetMachineC.cpp",
+    "${dawn_dxc_dir}/lib/Target/TargetRecip.cpp",
+    "${dawn_dxc_dir}/lib/Target/TargetSubtargetInfo.cpp",
+
+    "${dawn_dxc_dir}/lib/Linker/LinkModules.cpp",
+
+    "${dawn_dxc_dir}/lib/ProfileData/InstrProf.cpp",
+    "${dawn_dxc_dir}/lib/ProfileData/InstrProfReader.cpp",
+    "${dawn_dxc_dir}/lib/ProfileData/InstrProfWriter.cpp",
+    "${dawn_dxc_dir}/lib/ProfileData/CoverageMapping.cpp",
+    "${dawn_dxc_dir}/lib/ProfileData/CoverageMappingWriter.cpp",
+    "${dawn_dxc_dir}/lib/ProfileData/CoverageMappingReader.cpp",
+    "${dawn_dxc_dir}/lib/ProfileData/SampleProf.cpp",
+    "${dawn_dxc_dir}/lib/ProfileData/SampleProfReader.cpp",
+    "${dawn_dxc_dir}/lib/ProfileData/SampleProfWriter.cpp",
+
+    "${dawn_dxc_dir}/lib/Object/Archive.cpp",
+    "${dawn_dxc_dir}/lib/Object/ArchiveWriter.cpp",
+    "${dawn_dxc_dir}/lib/Object/Binary.cpp",
+    "${dawn_dxc_dir}/lib/Object/COFFObjectFile.cpp",
+    "${dawn_dxc_dir}/lib/Object/COFFYAML.cpp",
+    "${dawn_dxc_dir}/lib/Object/ELF.cpp",
+    "${dawn_dxc_dir}/lib/Object/ELFObjectFile.cpp",
+    "${dawn_dxc_dir}/lib/Object/ELFYAML.cpp",
+    "${dawn_dxc_dir}/lib/Object/Error.cpp",
+    "${dawn_dxc_dir}/lib/Object/IRObjectFile.cpp",
+    "${dawn_dxc_dir}/lib/Object/MachOObjectFile.cpp",
+    "${dawn_dxc_dir}/lib/Object/MachOUniversal.cpp",
+    "${dawn_dxc_dir}/lib/Object/Object.cpp",
+    "${dawn_dxc_dir}/lib/Object/ObjectFile.cpp",
+    "${dawn_dxc_dir}/lib/Object/RecordStreamer.cpp",
+    "${dawn_dxc_dir}/lib/Object/SymbolicFile.cpp",
+    "${dawn_dxc_dir}/lib/Object/SymbolSize.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Format/BreakableToken.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Format/ContinuationIndenter.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Format/Format.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Format/FormatToken.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Format/TokenAnnotator.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Format/UnwrappedLineFormatter.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Format/UnwrappedLineParser.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Format/WhitespaceManager.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Tooling/Core/Replacement.cpp",
+
     "${dawn_dxc_dir}/tools/clang/lib/Driver/Action.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Driver/Compilation.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Driver/CrossWindowsToolChain.cpp",
@@ -1671,6 +1752,59 @@ dxcompiler_sourceset("dxcompiler_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Driver/ToolChains.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Driver/Tools.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Driver/Types.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/ASTMatchers/ASTMatchFinder.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/ASTMatchers/ASTMatchersInternal.cpp",
+
+    "${dawn_dxc_dir}/lib/MC/ConstantPools.cpp",
+    "${dawn_dxc_dir}/lib/MC/ELFObjectWriter.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCAsmBackend.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCAsmInfo.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCAsmInfoCOFF.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCAsmInfoDarwin.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCAsmInfoELF.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCAsmStreamer.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCAssembler.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCCodeEmitter.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCCodeGenInfo.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCContext.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCDwarf.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCELFObjectTargetWriter.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCELFStreamer.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCExpr.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCInst.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCInstPrinter.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCInstrAnalysis.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCInstrDesc.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCLabel.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCLinkerOptimizationHint.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCMachOStreamer.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCMachObjectTargetWriter.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCNullStreamer.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCObjectFileInfo.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCObjectStreamer.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCObjectWriter.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCRegisterInfo.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSchedule.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSection.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSectionCOFF.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSectionELF.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSectionMachO.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCStreamer.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSubtargetInfo.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSymbol.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSymbolELF.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCSymbolizer.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCTargetOptions.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCValue.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCWin64EH.cpp",
+    "${dawn_dxc_dir}/lib/MC/MCWinEH.cpp",
+    "${dawn_dxc_dir}/lib/MC/MachObjectWriter.cpp",
+    "${dawn_dxc_dir}/lib/MC/StringTableBuilder.cpp",
+    "${dawn_dxc_dir}/lib/MC/SubtargetFeature.cpp",
+    "${dawn_dxc_dir}/lib/MC/WinCOFFObjectWriter.cpp",
+    "${dawn_dxc_dir}/lib/MC/WinCOFFStreamer.cpp",
+    "${dawn_dxc_dir}/lib/MC/YAML.cpp",
   ]
 }
 
@@ -1816,6 +1950,27 @@ dxcompiler_sourceset("dxcompiler_sources_3") {
     "${dawn_dxc_dir}/tools/clang/lib/AST/TypePrinter.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/AST/VTableBuilder.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/AST/VTTBuilder.cpp",
+
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/AnalysisDeclContext.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/BodyFarm.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/CFG.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/CFGReachabilityAnalysis.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/CFGStmtMap.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/CallGraph.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/Consumed.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/CodeInjector.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/Dominators.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/LiveVariables.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/ObjCNoReturn.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/PostOrderCFGView.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/ProgramPoint.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/PseudoConstantAnalysis.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/ReachableCode.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/ThreadSafety.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/ThreadSafetyCommon.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/ThreadSafetyLogical.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/ThreadSafetyTIL.cpp",
+    "${dawn_dxc_dir}/tools/clang/lib/Analysis/UninitializedValues.cpp",
   ]
 }
 
@@ -1842,7 +1997,7 @@ executable("dxc") {
 
   deps = [
     ":dxclib",
-    # ":dxcompiler",
+    ":dxcompiler",
   ]
   
   sources = [
