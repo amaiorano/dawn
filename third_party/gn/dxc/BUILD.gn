@@ -23,6 +23,8 @@ import("build/targets.gni")
 import("build/version.gni")
 import("build/tablegen.gni")
 
+import("build/system_binary_action.gni")
+
 llvm_target_triple = "dxil-ms-dx" # Force target triple
 dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
 
@@ -878,10 +880,9 @@ tablegen("clang-Driver-Options-inc") {
   tblgen_target = ":llvm-tblgen"
 }
 
-action("dxcetw-h") {
-  script = "build/run_system_binary.py"
+system_binary_action("dxcetw-h") {
   manifest = "${dawn_dxc_dir}/include/dxc/tracing/dxcetw.man"
-  sources = [
+  inputs = [
     manifest
   ]
   gen_output_dir = "$target_gen_dir/include/dxc/tracing/dxcetw"
