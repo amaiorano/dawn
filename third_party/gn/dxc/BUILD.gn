@@ -1109,6 +1109,7 @@ template("dxcompiler_sourceset") {
       "DXC_API_IMPORT=", # Don't import locally defined symbols
       "CINDEX_LINKAGE=",
       "LIBCLANG_CC=",
+      "_CINDEX_LIB_"
     ]
   }
 }
@@ -1974,7 +1975,7 @@ dxcompiler_sourceset("dxcompiler_sources_3") {
   ]
 }
 
-shared_library("dxcompiler") {
+loadable_module("dxcompiler") {
   if (dawn_has_build) {
     configs -= [ "//build/config/compiler:chromium_code" ]
     configs += [ "//build/config/compiler:no_chromium_code" ]
@@ -1997,6 +1998,9 @@ executable("dxc") {
 
   deps = [
     ":dxclib",
+  ]
+
+  data_deps = [
     ":dxcompiler",
   ]
   
