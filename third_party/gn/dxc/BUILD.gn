@@ -42,7 +42,7 @@ write_cmake_config("config-header") {
     "HAVE_INTTYPES_H=1",
     "HAVE_STDINT_H=1",
     "HAVE_UINT64_T=1",
-    "HAVE_U_INT64_T=1",
+    "HAVE_U_INT64_T=",
     "LLVM_BINDIR=",
     "LLVM_CONFIGTIME=",    
     "LLVM_DATADIR=",    
@@ -62,32 +62,32 @@ write_cmake_config("config-header") {
     "PACKAGE_BUGREPORT=http://llvm.org/bugs/",
     "PACKAGE_NAME=LLVM",
     "PACKAGE_STRING=LLVM ${llvm_version}git",
-    "strdup=strdup",
-    "stricmp=stricmp",
-    "strtoll=strtoll",
-    "strtoull=strtoull",
+    "strdup=_strdup",
+    "stricmp=_stricmp",
+    "strtoll=",
+    "strtoull=",
 
 
     #@TODO(amaiorano): Revisit variables below. Most are just unset for now.
-    "ENABLE_BACKTRACES=",
-    "ENABLE_CRASH_OVERRIDES=",
-    "DISABLE_LLVM_DYLIB_ATEXIT=",
-    "ENABLE_PIC=",
-    "HAVE_DECL_STRERROR_S=",
-    "HAVE_ISATTY=1",
+    "ENABLE_BACKTRACES=1",
+    "ENABLE_CRASH_OVERRIDES=1",
+    "DISABLE_LLVM_DYLIB_ATEXIT=1",
+    "ENABLE_PIC=1",
+    "HAVE_DECL_STRERROR_S=1",
+    "HAVE_ISATTY=",
     "LLVM_ENABLE_ZLIB=",
     "LLVM_USE_INTEL_JITEVENTS=",
     "LLVM_USE_OPROFILE=",
     "LINK_POLLY_INTO_TOOLS=",
-    "BUG_REPORT_URL=",
-    "ENABLE_TIMESTAMPS=",
+    "BUG_REPORT_URL=http://llvm.org/bugs/",
+    "ENABLE_TIMESTAMPS=1",
     "HAVE____CHKSTK_MS=",
     "HAVE____CHKSTK=",
     "HAVE___ALLOCA=",
     "HAVE___ASHLDI3=",
     "HAVE___ASHRDI3=",
     "HAVE___CHKSTK_MS=",
-    "HAVE___CHKSTK=",
+    "HAVE___CHKSTK=1",
     "HAVE___CMPDI2=",
     "HAVE___DIVDI3=",
     "HAVE___FIXDFDI=",
@@ -99,7 +99,7 @@ write_cmake_config("config-header") {
     "HAVE___UDIVDI3=",
     "HAVE___UMODDI3=",
     "HAVE__ALLOCA=",
-    "HAVE__CHSIZE_S=",
+    "HAVE__CHSIZE_S=1",
     "HAVE_BACKTRACE=",
     "HAVE_CLOSEDIR=",
     "HAVE_CXXABI_H=",
@@ -109,10 +109,10 @@ write_cmake_config("config-header") {
     "HAVE_DLERROR=",
     "HAVE_DLFCN_H=",
     "HAVE_DLOPEN=",
-    "HAVE_ERRNO_H=",
+    "HAVE_ERRNO_H=1",
     "HAVE_EXECINFO_H=",
-    "HAVE_FCNTL_H=",
-    "HAVE_FENV_H=",
+    "HAVE_FCNTL_H=1",
+    "HAVE_FENV_H=1",
     "HAVE_FFI_CALL=",
     "HAVE_FFI_FFI_H=",
     "HAVE_FFI_H=",
@@ -123,14 +123,14 @@ write_cmake_config("config-header") {
     "HAVE_GETRLIMIT=",
     "HAVE_GETRUSAGE=",
     "HAVE_GETTIMEOFDAY=",
-    "HAVE_INT64_T=",
+    "HAVE_INT64_T=1",
     "HAVE_LIBDL=",
     "HAVE_LIBEDIT=",
     "HAVE_LIBPSAPI=",
     "HAVE_LIBPTHREAD=",
     "HAVE_LIBSHELL32=",
     "HAVE_LIBZ=",
-    "HAVE_LIMITS_H=",
+    "HAVE_LIMITS_H=1",
     "HAVE_LINK_H=",
     "HAVE_LONGJMP=",
     "HAVE_MACH_MACH_H=",
@@ -138,7 +138,7 @@ write_cmake_config("config-header") {
     "HAVE_MALLCTL=",
     "HAVE_MALLINFO=",
     "HAVE_MALLINFO2=",
-    "HAVE_MALLOC_H=",
+    "HAVE_MALLOC_H=1",
     "HAVE_MALLOC_MALLOC_H=",
     "HAVE_MALLOC_ZONE_STATISTICS=",
     "HAVE_MKDTEMP=",
@@ -160,19 +160,20 @@ write_cmake_config("config-header") {
     "HAVE_SETJMP=",
     "HAVE_SETRLIMIT=",
     "HAVE_SIGLONGJMP=",
-    "HAVE_SIGNAL_H=",
+    "HAVE_SIGNAL_H=1",
     "HAVE_SIGSETJMP=",
     "HAVE_STRDUP=",
     "HAVE_STRERROR_R=",
-    "HAVE_STRERROR=",
-    "HAVE_STRTOLL=",
+    "HAVE_STRERROR=1",
+    "HAVE_STRTOLL=1",
     "HAVE_STRTOQ=",
     "HAVE_SYS_DIR_H=",
     "HAVE_SYS_IOCTL_H=",
+    # "HAVE_SYS_MMAN_H=", # TODO(amaiorano): Should be #undef'd by python script
     "HAVE_SYS_NDIR_H=",
     "HAVE_SYS_PARAM_H=",
     "HAVE_SYS_RESOURCE_H=",
-    "HAVE_SYS_STAT_H=",
+    "HAVE_SYS_STAT_H=1",
     "HAVE_SYS_TIME_H=",
     "HAVE_SYS_TYPES_H=",
     "HAVE_SYS_UIO_H=",
@@ -185,10 +186,10 @@ write_cmake_config("config-header") {
     "HAVE_WRITEV=",
     "HAVE_ZLIB_H=",
     "LTDL_DLOPEN_DEPLIBS=",
-    "LTDL_SHLIB_EXT=",
+    "LTDL_SHLIB_EXT=.dll",
     "LTDL_SYSSEARCHPATH=",
-    "RETSIGTYPE=",
-    "WIN32_ELMCB_PCSTR=",    
+    "RETSIGTYPE=void",
+    "WIN32_ELMCB_PCSTR=PCSTR",
   ]
 
   # NOTE: These are meta-definitions for the variable (not value) to determine
@@ -285,7 +286,7 @@ write_cmake_config("llvm-config-header") {
   } else {
     values += [
       "LLVM_ON_UNIX=1",
-      "LLVM_ON_WIN32=0",
+      "LLVM_ON_WIN32=",
     ]
   }
 }
@@ -297,7 +298,7 @@ write_cmake_config("DataTypes-header") {
     "HAVE_INTTYPES_H=1",
     "HAVE_STDINT_H=1",
     "HAVE_UINT64_T=1",
-    "HAVE_U_INT64_T=1",
+    "HAVE_U_INT64_T=",
   ]
 }
 
@@ -526,7 +527,7 @@ write_cmake_config("SharedLibAffix-h") {
   values = [
     # TODO(amaiorano): Expose arg to set these?
     "CMAKE_SHARED_LIBRARY_PREFIX=",
-    "CMAKE_SHARED_LIBRARY_SUFFIX=",
+    "CMAKE_SHARED_LIBRARY_SUFFIX=.dll",
   ]
 }
 
@@ -894,11 +895,11 @@ clang_tablegen("AttrPCHWrite-inc") {
 }
 
 system_binary_action("dxcetw-h") {
-  manifest = "${dawn_dxc_dir}/include/dxc/tracing/dxcetw.man"
+  manifest = "${dawn_dxc_dir}/include/dxc/Tracing/dxcetw.man"
   inputs = [
     manifest
   ]
-  gen_output_dir = "$target_gen_dir/include/dxc/tracing/dxcetw"
+  gen_output_dir = "$target_gen_dir/include/dxc/Tracing/dxcetw"
   gen_output = "${gen_output_dir}/dxcetw.h"
   outputs = [
     gen_output,
@@ -1031,7 +1032,7 @@ write_cmake_config("clang-basic-version-inc") {
     "CLANG_VERSION_MAJOR=$llvm_version_major",
     "CLANG_VERSION_MINOR=$llvm_version_minor",    
     "CLANG_VERSION_PATCHLEVEL=$llvm_version_patch",
-    "CLANG_HAS_VERSION_PATCHLEVEL=1",
+    "CLANG_HAS_VERSION_PATCHLEVEL=0",
   ]
 }
 
@@ -1041,8 +1042,8 @@ write_cmake_config("clang-config-h") {
   output = "$target_gen_dir/tools/clang//include/clang/Config/config.h"
   values = [
     # TODO(amaiorano): Populate values correctly if necessary.
-    "BUG_REPORT_URL=",
-    "CLANG_DEFAULT_OPENMP_RUNTIME=",
+    "BUG_REPORT_URL=http://llvm.org/bugs/",
+    "CLANG_DEFAULT_OPENMP_RUNTIME=libgomp",
     "CLANG_LIBDIR_SUFFIX=",
     "CLANG_RESOURCE_DIR=",
     "C_INCLUDE_DIRS=",
@@ -1056,15 +1057,13 @@ write_cmake_config("clang-config-h") {
 
 # Template used to split up source_sets from multiple directories with name collisions.
 template("dxcompiler_sourceset") {
-  source_set(target_name) {
-    forward_variables_from(invoker, ["sources"])
-    
+  settings = {
     public_configs = [
       ":common_config"
     ]
 
     # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
-    configs -= [ "//build/config/win:unicode" ]
+    # configs -= [ "//build/config/win:unicode" ]
     
     deps = [
       ":DxcSupport",
@@ -1074,7 +1073,6 @@ template("dxcompiler_sourceset") {
       ":clang-basic-version-inc",
       ":clang-Driver-Options-inc",
       ":gen_intrin_main_tables_15-h",
-      ":DxcDisassembler-inc",
       ":DxilValidation-inc",
       ":DxcOptimizer-inc",
       ":DxilValidationImpl-inc",
@@ -1101,7 +1099,7 @@ template("dxcompiler_sourceset") {
         ":dxcetw-h",
       ]
       include_dirs += [
-        "$target_gen_dir/include/dxc/tracing/dxcetw", # dxcetw-h
+        "$target_gen_dir/include/dxc/Tracing/dxcetw", # dxcetw-h
       ]
     }
 
