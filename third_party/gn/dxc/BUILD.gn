@@ -17,8 +17,8 @@ import("../../../scripts/dawn_overrides_with_defaults.gni")
 import("${dawn_root}/scripts/dawn_features.gni")
 
 # TODO(amaiorano): Validate that we can copy these from LLVM
-import("build/tablegen.gni")
 import("build/write_cmake_config.gni")
+import("build/compiled_action.gni")
 
 import("build/system_binary_action.gni")
 dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
@@ -656,8 +656,40 @@ executable("clang-tblgen") {
   ]
 }
 
+template("tblgen") {
+  assert(defined(invoker.args), "must set 'args'")
+  assert(defined(invoker.td_file), "must set 'td_file")
+  assert(defined(invoker.output_name), "must set 'output_name")
+  assert(defined(invoker.tblgen_target), "must set 'tblgen_target")
+
+  compiled_action(target_name) {
+    td_file = invoker.td_file
+    tool = invoker.tblgen_target
+    inputs = [ td_file ]
+
+    # TODO(amaiorano): Maybe targets should provide full path
+    output_file = "$target_gen_dir/" + invoker.output_name
+    dep_file = "$output_file.d"
+    td_file = rebase_path(td_file, root_build_dir)
+
+    args = [
+             "-I",
+             rebase_path("${invoker.dawn_dxc_dir}/include", root_build_dir),
+             "-I",
+             get_path_info(td_file, "dir"),
+             "-d",
+             rebase_path(dep_file, root_build_dir),
+             "-o",
+             rebase_path(output_file, root_build_dir),
+             td_file,
+           ] + invoker.args
+
+    outputs = [ output_file ]
+  }
+}
+
 template("clang_tablegen") {
-  tablegen(target_name) {
+  tblgen(target_name) {
     forward_variables_from(invoker,
                            [
                              "output_name",
@@ -686,21 +718,21 @@ template("clang_diag_gen") {
 ## llvm-tblgen and clang-tblgen targets
 #######################################################################
 
-tablegen("HLSLOptions-inc") {
+tblgen("HLSLOptions-inc") {
   args = [ "-gen-opt-parser-defs" ]
   td_file = "${dawn_dxc_dir}/include/dxc/Support/HLSLOptions.td"
   output_name = "include/dxc/Support/HLSLOptions.inc"
   tblgen_target = ":llvm-tblgen"
 }
 
-tablegen("Intrinsics-td") {
+tblgen("Intrinsics-td") {
   args = [ "-gen-intrinsic" ]
   td_file = "${dawn_dxc_dir}/include/llvm/IR/Intrinsics.td"
   output_name = "include/llvm/IR/Intrinsics.gen"
   tblgen_target = ":llvm-tblgen"
 }
 
-tablegen("clang-Driver-Options-inc") {
+tblgen("clang-Driver-Options-inc") {
   args = [ "-gen-opt-parser-defs" ]
   td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Driver/Options.td"
   output_name = "tools/clang/include/clang/Driver/Options.inc"
