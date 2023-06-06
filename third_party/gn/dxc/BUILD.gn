@@ -28,15 +28,17 @@ import("build/system_binary_action.gni")
 llvm_target_triple = "dxil-ms-dx" # Force target triple
 dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
 
+#######################################################################
+## CMake config targets
+#######################################################################
+
 write_cmake_config("config-header") {
   input = "${dawn_dxc_dir}/include/llvm/Config/config.h.cmake"
   output = "$target_gen_dir/include/llvm/Config/config.h"
   values = [
     # TODO(amaiorano): Many of the flags set here are duplicated for the "llvm-config-header" target below.
     # Factor this out somehow (template?).
-
-    # TODO(amaiorano): enable this flag when asserts are enabled
-    "LLVM_ENABLE_ABI_BREAKING_CHECKS=0",
+    "LLVM_ENABLE_ABI_BREAKING_CHECKS=0", # TODO(amaiorano): enable this flag when asserts are enabled
     "LLVM_ENABLE_THREADS=1",
     "LLVM_HAS_ATOMICS=1",
     "HAVE_INTTYPES_H=1",
@@ -66,7 +68,6 @@ write_cmake_config("config-header") {
     "stricmp=_stricmp",
     "strtoll=",
     "strtoull=",
-
 
     #@TODO(amaiorano): Revisit variables below. Most are just unset for now.
     "ENABLE_BACKTRACES=1",
@@ -236,8 +237,7 @@ write_cmake_config("llvm-config-header") {
     "LLVM_DATADIR=",
     "LLVM_DEFAULT_TARGET_TRIPLE=$llvm_target_triple",
     "LLVM_DOCSDIR=",
-    # TODO(amaiorano): enable this flag when asserts are enabled
-    "LLVM_ENABLE_ABI_BREAKING_CHECKS=0",
+    "LLVM_ENABLE_ABI_BREAKING_CHECKS=0", # TODO(amaiorano): enable this flag when asserts are enabled
     "LLVM_ETCDIR=",
     "LLVM_HAS_ATOMICS=1",
     "LLVM_HOST_TRIPLE=$llvm_current_triple",
@@ -338,6 +338,50 @@ write_cmake_config("Disassemblers-def") {
   ]
 }
 
+write_cmake_config("SharedLibAffix-h") {
+  input = "${dawn_dxc_dir}/lib/DxcSupport/SharedLibAffix.inc"
+  output = "$target_gen_dir/include/dxc/Support/SharedLibAffix.h"
+  values = [
+    # TODO(amaiorano): Expose arg to set these?
+    "CMAKE_SHARED_LIBRARY_PREFIX=",
+    "CMAKE_SHARED_LIBRARY_SUFFIX=.dll",
+  ]
+}
+
+write_cmake_config("clang-basic-version-inc") {
+  input = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Version.inc.in"
+  output = "$target_gen_dir/tools/clang/include/clang/Basic/Version.inc"
+  values = [
+    # TODO(amaiorano): Populate values correctly if necessary.
+    "CLANG_VERSION=$llvm_version",
+    "CLANG_VERSION_MAJOR=$llvm_version_major",
+    "CLANG_VERSION_MINOR=$llvm_version_minor",    
+    "CLANG_VERSION_PATCHLEVEL=$llvm_version_patch",
+    "CLANG_HAS_VERSION_PATCHLEVEL=0",
+  ]
+}
+
+write_cmake_config("clang-config-h") {
+  input = "${dawn_dxc_dir}/tools/clang//include/clang/Config/config.h.cmake"
+  output = "$target_gen_dir/tools/clang//include/clang/Config/config.h"
+  values = [
+    # TODO(amaiorano): Populate values correctly if necessary.
+    "BUG_REPORT_URL=http://llvm.org/bugs/",
+    "CLANG_DEFAULT_OPENMP_RUNTIME=libgomp",
+    "CLANG_LIBDIR_SUFFIX=",
+    "CLANG_RESOURCE_DIR=",
+    "C_INCLUDE_DIRS=",
+    "DEFAULT_SYSROOT=",
+    "GCC_INSTALL_PREFIX=",
+    "CLANG_HAVE_LIBXML=",
+    "BACKEND_PACKAGE_STRING=",
+    "HOST_LINK_VERSION=",
+  ]
+}
+
+#######################################################################
+## Common config shared by all targets
+#######################################################################
 
 config("common_config") {
   if (is_win) {
@@ -403,6 +447,11 @@ config("common_config") {
   ]
 }
 
+#######################################################################
+## Support
+#######################################################################
+
+# Target shared by tbl-gen and dxc targets
 static_library("Support") {
   output_name = "LLVMSupport"
 
@@ -469,7 +518,6 @@ static_library("Support") {
       "${dawn_dxc_dir}/lib/Support/MSFileSystemBasic.cpp",
       "${dawn_dxc_dir}/lib/Support/MD5.cpp",
       "${dawn_dxc_dir}/lib/Support/Options.cpp",
-      # PluginLoader.cpp    # HLSL Change Starts - no support for plug-in loader
       "${dawn_dxc_dir}/lib/Support/PrettyStackTrace.cpp",
       "${dawn_dxc_dir}/lib/Support/RandomNumberGenerator.cpp",
       "${dawn_dxc_dir}/lib/Support/Regex.cpp",
@@ -501,12 +549,9 @@ static_library("Support") {
       "${dawn_dxc_dir}/lib/Support/regexec.c",
       "${dawn_dxc_dir}/lib/Support/regfree.c",
       "${dawn_dxc_dir}/lib/Support/regstrlcpy.c",
-      "${dawn_dxc_dir}/lib/Support/regmalloc.cpp", # HLSL Change
-
-      # System
-      "${dawn_dxc_dir}/lib/Support/assert.cpp",      # HLSL Change
+      "${dawn_dxc_dir}/lib/Support/regmalloc.cpp",
+      "${dawn_dxc_dir}/lib/Support/assert.cpp",
       "${dawn_dxc_dir}/lib/Support/Atomic.cpp",
-      # DynamicLibrary.cpp # HLSL Change - no support for interpreter or jit
       "${dawn_dxc_dir}/lib/Support/Errno.cpp",
       "${dawn_dxc_dir}/lib/Support/Host.cpp",
       "${dawn_dxc_dir}/lib/Support/Memory.cpp",
@@ -520,22 +565,16 @@ static_library("Support") {
       "${dawn_dxc_dir}/lib/Support/TargetRegistry.cpp",
       "${dawn_dxc_dir}/lib/Support/ThreadLocal.cpp",
       "${dawn_dxc_dir}/lib/Support/Threading.cpp",
-      "${dawn_dxc_dir}/lib/Support/TimeProfiler.cpp", # HLSL Change - Support hierarchial time tracing.
+      "${dawn_dxc_dir}/lib/Support/TimeProfiler.cpp",
       "${dawn_dxc_dir}/lib/Support/TimeValue.cpp",
       "${dawn_dxc_dir}/lib/Support/Valgrind.cpp",
       "${dawn_dxc_dir}/lib/Support/Watchdog.cpp", 
   ]
 }
 
-write_cmake_config("SharedLibAffix-h") {
-  input = "${dawn_dxc_dir}/lib/DxcSupport/SharedLibAffix.inc"
-  output = "$target_gen_dir/include/dxc/Support/SharedLibAffix.h"
-  values = [
-    # TODO(amaiorano): Expose arg to set these?
-    "CMAKE_SHARED_LIBRARY_PREFIX=",
-    "CMAKE_SHARED_LIBRARY_SUFFIX=.dll",
-  ]
-}
+#######################################################################
+## llvm-tblgen and clang-tblgen executables and templates
+#######################################################################
 
 # Common code for both llvm-tblgen and clang-tblgen
 source_set("TableGen") {
@@ -592,84 +631,6 @@ executable("llvm-tblgen") {
   ]
 }
 
-tablegen("HLSLOptions-inc") {
-  args = ["-gen-opt-parser-defs"]
-  td_file = "${dawn_dxc_dir}/include/dxc/Support/HLSLOptions.td"
-  output_name = "include/dxc/Support/HLSLOptions.inc"
-  tblgen_target = ":llvm-tblgen"
-}
-
-tablegen("Intrinsics-td") {
-  args = ["-gen-intrinsic"]
-  td_file = "${dawn_dxc_dir}/include/llvm/IR/Intrinsics.td"
-  output_name = "include/llvm/IR/Intrinsics.gen"
-  tblgen_target = ":llvm-tblgen"
-}
-
-# This target contains common code shared by both 'dxc' and 'dxcompiler' targets
-static_library("dxclib") {
-  public_configs = [
-    ":common_config"
-  ]
-
-  if (dawn_has_build) {
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
-  }
-  public_deps = [
-    ":DataTypes-header",
-    ":Support",
-    ":Intrinsics-td",
-  ]
-  sources = [
-    "${dawn_dxc_dir}/lib/DxcSupport/dxcapi.use.cpp",
-    "${dawn_dxc_dir}/lib/DxcSupport/dxcmem.cpp",
-    "${dawn_dxc_dir}/lib/DxcSupport/FileIOHelper.cpp",
-    "${dawn_dxc_dir}/lib/DxcSupport/Global.cpp",
-    "${dawn_dxc_dir}/lib/DxcSupport/HLSLOptions.cpp",
-    "${dawn_dxc_dir}/lib/DxcSupport/Unicode.cpp",
-    "${dawn_dxc_dir}/lib/DxcSupport/WinAdapter.cpp",
-    "${dawn_dxc_dir}/lib/DxcSupport/WinFunctions.cpp",    
-
-    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainer.cpp",
-    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerAssembler.cpp",
-    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerReader.cpp",
-    "${dawn_dxc_dir}/lib/DxilContainer/DxcContainerBuilder.cpp",
-    "${dawn_dxc_dir}/lib/DxilContainer/DxilRDATBuilder.cpp",
-    "${dawn_dxc_dir}/lib/DxilContainer/DxilRuntimeReflection.cpp",
-    "${dawn_dxc_dir}/lib/DxilContainer/RDATDxilSubobjects.cpp",
-
-    "${dawn_dxc_dir}/lib/DXIL/DxilCBuffer.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilCompType.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilCounters.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilInterpolationMode.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilMetadataHelper.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilModule.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilModuleHelper.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilOperations.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilResource.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilResourceBase.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilResourceBinding.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilResourceProperties.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilSampler.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilSemantic.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilShaderFlags.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilShaderModel.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilSignature.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilSignatureElement.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilSubobject.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilTypeSystem.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilUtil.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilUtilDbgInfoAndMisc.cpp",
-    "${dawn_dxc_dir}/lib/DXIL/DxilPDB.cpp",
-
-    "${dawn_dxc_dir}/lib/Option/Arg.cpp",
-    "${dawn_dxc_dir}/lib/Option/ArgList.cpp",
-    "${dawn_dxc_dir}/lib/Option/Option.cpp",
-    "${dawn_dxc_dir}/lib/Option/OptTable.cpp",
-  ]
-}
-
 executable("clang-tblgen") {
   deps = [
     ":TableGen",
@@ -701,7 +662,6 @@ template("clang_tablegen") {
   }  
 }
 
-# tools/clang/include/clang/Basic/CMakeLists.txt
 template("clang_diag_gen") {
   clang_tablegen("Diagnostic${target_name}Kinds-inc") {
     forward_variables_from(invoker, "*")
@@ -710,6 +670,32 @@ template("clang_diag_gen") {
     output_name = "/tools/clang/include/clang/Basic/Diagnostic${target_name}Kinds.inc"
   }
 }
+
+#######################################################################
+## llvm-tblgen and clang-tblgen targets
+#######################################################################
+
+tablegen("HLSLOptions-inc") {
+  args = ["-gen-opt-parser-defs"]
+  td_file = "${dawn_dxc_dir}/include/dxc/Support/HLSLOptions.td"
+  output_name = "include/dxc/Support/HLSLOptions.inc"
+  tblgen_target = ":llvm-tblgen"
+}
+
+tablegen("Intrinsics-td") {
+  args = ["-gen-intrinsic"]
+  td_file = "${dawn_dxc_dir}/include/llvm/IR/Intrinsics.td"
+  output_name = "include/llvm/IR/Intrinsics.gen"
+  tblgen_target = ":llvm-tblgen"
+}
+
+tablegen("clang-Driver-Options-inc") {
+  args = ["-gen-opt-parser-defs"]
+  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Driver/Options.td"
+  output_name = "tools/clang/include/clang/Driver/Options.inc"
+  tblgen_target = ":llvm-tblgen"
+}
+
 clang_diag_gen("Analysis"){}
 clang_diag_gen("AST"){}
 clang_diag_gen("Comment"){}
@@ -751,7 +737,6 @@ ClangBasicDeps = [
   ":AttrHasAttributeImpl-inc",
 ]
 
-# tools/clang/include/clang/AST/CMakeLists.txt
 clang_tablegen("Attrs-inc") {
   args = ["-gen-clang-attr-classes", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
   td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
@@ -826,8 +811,6 @@ ClangASTDeps = [
   ":CommentCommandInfo-inc",
   ":CommentCommandList-inc",
 ]
-
-# tools/clang/include/clang/Sema/CMakeLists.txt
 clang_tablegen("AttrTemplateInstantiate-inc") {
   args = [ "-gen-clang-attr-template-instantiate", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
   td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
@@ -860,23 +843,11 @@ ClangSemaDeps = [
   ":AttrSpellingListIndex-inc",
   ":AttrParsedAttrImpl-inc",
 ]
-
-# tools/clang/include/clang/Parse/CMakeLists.txt
 clang_tablegen("AttrParserStringSwitches-inc") {
   args = ["-gen-clang-attr-parser-string-switches", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
   td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
   output_name = "/tools/clang/include/clang/Parse/AttrParserStringSwitches.inc"
 }
-
-# tools/clang/include/clang/Driver/CMakeLists.txt
-tablegen("clang-Driver-Options-inc") {
-  args = ["-gen-opt-parser-defs"]
-  td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Driver/Options.td"
-  output_name = "tools/clang/include/clang/Driver/Options.inc"
-  tblgen_target = ":llvm-tblgen"
-}
-
-# tools/clang/include/clang/Serialization/CMakeLists.txt
 clang_tablegen("AttrPCHRead-inc") {
   args = ["-gen-clang-attr-pch-read", "-I", rebase_path("${dawn_dxc_dir}/tools/clang/include", root_build_dir)]
   td_file = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Attr.td"
@@ -888,6 +859,11 @@ clang_tablegen("AttrPCHWrite-inc") {
   output_name = "/tools/clang/include/clang/Serialization/AttrPCHWrite.inc"
 }
 
+#######################################################################
+## dxc generators (gen_version, hlsl_hctgen, etc.)
+#######################################################################
+
+# Generates dxcetw.h used by dxcompiler
 system_binary_action("dxcetw-h") {
   manifest = "${dawn_dxc_dir}/include/dxc/Tracing/dxcetw.man"
   inputs = [
@@ -912,7 +888,8 @@ system_binary_action("dxcetw-h") {
   ]
 }
 
-# utils/version/CMakeLists.txt
+# Invokes gen_version.py
+# TODO(amaiorano): Move to generate_version_include.gni
 template("generate_version_include") {
   assert(defined(invoker.input_file), "must set 'input_file' in $target_name")
   assert(defined(invoker.output_file), "must set 'output_file' in $target_name")
@@ -947,7 +924,7 @@ generate_version_include("hlsl_dxcversion_autogen") {
   output_file = "/utils/version/dxcversion.inc"
 }
 
-# cmake/modules/HCT.cmake
+# See cmake/modules/HCT.cmake
 # TODO(amaiorano): Move to add_hlsl_hctgen.gni
 template("add_hlsl_hctgen") {
   assert(defined(invoker.mode), "must set 'mode' in $target_name")
@@ -955,10 +932,10 @@ template("add_hlsl_hctgen") {
 
   action(target_name) {
     if (defined(invoker.build_dir) && invoker.build_dir) {
-      # TODO
+      # TODO(amaiorano): See HCT.cmake
     }
     if (defined(invoker.code_tag) && invoker.code_tag) {
-      # TODO
+      # TODO(amaiorano): See HCT.cmake
     }
 
     script = "${invoker.dawn_dxc_dir}/utils/hct/hctgen.py"
@@ -979,19 +956,16 @@ template("add_hlsl_hctgen") {
     # TODO(amaiorano) Make sure both build_dir and code_tag aren't true
   }
 }
-# tools/clang/tools/dxcompiler/CMakeLists.txt
 add_hlsl_hctgen("DxcDisassembler-inc") {
   mode = "DxcDisassembler"
   output = "/tools/clang/tools/dxcompiler/DxcDisassembler.inc"
   build_dir = true
 }
-# include/dxc/HLSL/CMakeLists.txt
 add_hlsl_hctgen("DxilValidation-inc") {
   mode = "DxilValidationInc"
   output = "/include/dxc/HLSL/DxilValidation.inc"
   build_dir = true
 }
-# lib/HLSL/CMakeLists.txt
 add_hlsl_hctgen("DxcOptimizer-inc") {
   mode = "DxcOptimizer"
   output = "/lib/HLSL/DxcOptimizer.inc"
@@ -1002,13 +976,11 @@ add_hlsl_hctgen("DxilValidationImpl-inc") {
   output = "/lib/HLSL/DxilValidationImpl.inc"
   build_dir = true
 }
-# tools/clang/lib/Sema/CMakeLists.txt
 add_hlsl_hctgen("gen_intrin_main_tables_15-h") {
   mode = "DxilIntrinsicTables"
   output = "/tools/clang/lib/Sema/gen_intrin_main_tables_15.h"
   build_dir = true
 }
-# lib/DxilPIXPasses/CMakeLists.txt
 add_hlsl_hctgen("DxilPIXPasses-inc") {
   mode = "DxilPIXPasses"
   output = "/lib/DxilPIXPasses/DxilPIXPasses.inc"
@@ -1016,40 +988,73 @@ add_hlsl_hctgen("DxilPIXPasses-inc") {
 }
 
 
-# tools/clang/CMakeLists.txt
-write_cmake_config("clang-basic-version-inc") {
-  input = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Version.inc.in"
-  output = "$target_gen_dir/tools/clang/include/clang/Basic/Version.inc"
-  values = [
-    # TODO(amaiorano): Not sure if this is right, or even if it matters.
-    "CLANG_VERSION=$llvm_version",
-    "CLANG_VERSION_MAJOR=$llvm_version_major",
-    "CLANG_VERSION_MINOR=$llvm_version_minor",    
-    "CLANG_VERSION_PATCHLEVEL=$llvm_version_patch",
-    "CLANG_HAS_VERSION_PATCHLEVEL=0",
+#######################################################################
+## dxc and dxcompiler
+#######################################################################
+
+# This target contains common code shared by both 'dxc' and 'dxcompiler' targets
+static_library("dxclib") {
+  public_configs = [
+    ":common_config"
+  ]
+
+  if (dawn_has_build) {
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+  }
+  public_deps = [
+    ":DataTypes-header",
+    ":Support",
+    ":Intrinsics-td",
+  ]
+  sources = [
+    "${dawn_dxc_dir}/lib/DxcSupport/dxcapi.use.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/dxcmem.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/FileIOHelper.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/Global.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/HLSLOptions.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/Unicode.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/WinAdapter.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/WinFunctions.cpp",    
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainer.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerAssembler.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerReader.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxcContainerBuilder.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilRDATBuilder.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/DxilRuntimeReflection.cpp",
+    "${dawn_dxc_dir}/lib/DxilContainer/RDATDxilSubobjects.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilCBuffer.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilCompType.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilCounters.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilInterpolationMode.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilMetadataHelper.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilModule.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilModuleHelper.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilOperations.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilResource.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilResourceBase.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilResourceBinding.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilResourceProperties.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSampler.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSemantic.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilShaderFlags.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilShaderModel.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSignature.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSignatureElement.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilSubobject.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilTypeSystem.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilUtil.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilUtilDbgInfoAndMisc.cpp",
+    "${dawn_dxc_dir}/lib/DXIL/DxilPDB.cpp",
+    "${dawn_dxc_dir}/lib/Option/Arg.cpp",
+    "${dawn_dxc_dir}/lib/Option/ArgList.cpp",
+    "${dawn_dxc_dir}/lib/Option/Option.cpp",
+    "${dawn_dxc_dir}/lib/Option/OptTable.cpp",
   ]
 }
 
-# tools/clang/CMakeLists.txt
-write_cmake_config("clang-config-h") {
-  input = "${dawn_dxc_dir}/tools/clang//include/clang/Config/config.h.cmake"
-  output = "$target_gen_dir/tools/clang//include/clang/Config/config.h"
-  values = [
-    # TODO(amaiorano): Populate values correctly if necessary.
-    "BUG_REPORT_URL=http://llvm.org/bugs/",
-    "CLANG_DEFAULT_OPENMP_RUNTIME=libgomp",
-    "CLANG_LIBDIR_SUFFIX=",
-    "CLANG_RESOURCE_DIR=",
-    "C_INCLUDE_DIRS=",
-    "DEFAULT_SYSROOT=",
-    "GCC_INSTALL_PREFIX=",
-    "CLANG_HAVE_LIBXML=",
-    "BACKEND_PACKAGE_STRING=",
-    "HOST_LINK_VERSION=",
-  ]
-}
-
-# Template used to split up source_sets from multiple directories with name collisions.
+# Template to define a source_set or static_library for dxcompiler sources.
+# Used to split up sources into multiple targets to avoid name collisions.
 template("dxcompiler_sourceset") {
   assert(defined(invoker.as_source_set) || defined(invoker.as_static_library), "")
   target_type = ""
@@ -1117,7 +1122,10 @@ template("dxcompiler_sourceset") {
 }
 
 dxcompiler_sourceset("dxcompiler_lib_sources_1") {
+  # Must be static to ensure unused globals are stripped, otherwise they
+  # attempt to allocate before the global allocator is initialized.
   as_static_library = true
+
   sources = [
     "${dawn_dxc_dir}/lib/HLSL/ComputeViewIdState.cpp",
     "${dawn_dxc_dir}/lib/HLSL/ComputeViewIdStateBuilder.cpp",
@@ -1170,7 +1178,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/HLSL/DxilNoOptLegalize.cpp",
     "${dawn_dxc_dir}/lib/HLSL/DxilPoisonValues.cpp",
     "${dawn_dxc_dir}/lib/HLSL/DxilDeleteRedundantDebugValues.cpp",    
-
     "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndex.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexCXX.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/libclang/CIndexCodeCompletion.cpp",
@@ -1192,9 +1199,8 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/tools/libclang/IndexTypeSourceInfo.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/libclang/Indexing.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/libclang/IndexingContext.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcisenseimpl.cpp", # HLSL Change
-    "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcrewriteunused.cpp", # HLSL Change
-
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcisenseimpl.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcrewriteunused.cpp",
     "${dawn_dxc_dir}/lib/DxilDia/DxcPixCompilationInfo.cpp",
     "${dawn_dxc_dir}/lib/DxilDia/DxcPixDxilDebugInfo.cpp",
     "${dawn_dxc_dir}/lib/DxilDia/DxcPixDxilStorage.cpp",
@@ -1217,16 +1223,12 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSegmentMap.cpp",
     "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSourceFiles.cpp",
     "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSymbols.cpp",
-
     "${dawn_dxc_dir}/lib/DxcBindingTable/DxcBindingTable.cpp",
-
     "${dawn_dxc_dir}/lib/IRReader/IRReader.cpp",
-
     "${dawn_dxc_dir}/lib/Bitcode/Writer/BitWriter.cpp",
     "${dawn_dxc_dir}/lib/Bitcode/Writer/BitcodeWriter.cpp",
     "${dawn_dxc_dir}/lib/Bitcode/Writer/BitcodeWriterPass.cpp",
     "${dawn_dxc_dir}/lib/Bitcode/Writer/ValueEnumerator.cpp",
-  
     "${dawn_dxc_dir}/tools/clang/lib/Frontend/ASTConsumers.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Frontend/ASTMerge.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Frontend/ASTUnit.cpp",
@@ -1258,7 +1260,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Frontend/TextDiagnosticBuffer.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Frontend/TextDiagnosticPrinter.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Frontend/VerifyDiagnosticConsumer.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/CodeGen/BackendUtil.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/CodeGen/CGAtomic.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/CodeGen/CGBlocks.cpp",
@@ -1305,7 +1306,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/CodeGen/ObjectFilePCHContainerOperations.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/CodeGen/SanitizerMetadata.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/CodeGen/TargetInfo.cpp",
-
     "${dawn_dxc_dir}/lib/Transforms/Utils/ASanStackFrameLayout.cpp",
     "${dawn_dxc_dir}/lib/Transforms/Utils/AddDiscriminators.cpp",
     "${dawn_dxc_dir}/lib/Transforms/Utils/BasicBlockUtils.cpp",
@@ -1346,7 +1346,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp",
     "${dawn_dxc_dir}/lib/Transforms/Utils/Utils.cpp",
     "${dawn_dxc_dir}/lib/Transforms/Utils/ValueMapper.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Sema/AnalysisBasedWarnings.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Sema/AttributeList.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Sema/CodeCompleteConsumer.cpp",
@@ -1395,7 +1394,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Sema/SemaTemplateVariadic.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Sema/SemaType.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Sema/TypeLocBuilder.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Lex/HeaderMap.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Lex/HeaderSearch.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Lex/HLSLMacroExpander.cpp",
@@ -1419,12 +1417,10 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Lex/ScratchBuffer.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Lex/TokenConcatenation.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Lex/TokenLexer.cpp",
-    
     "${dawn_dxc_dir}/lib/DxilRootSignature/DxilRootSignature.cpp",
     "${dawn_dxc_dir}/lib/DxilRootSignature/DxilRootSignatureConvert.cpp",
     "${dawn_dxc_dir}/lib/DxilRootSignature/DxilRootSignatureSerializer.cpp",
     "${dawn_dxc_dir}/lib/DxilRootSignature/DxilRootSignatureValidator.cpp",
-
     "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilAddPixelHitInstrumentation.cpp",
     "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilAnnotateWithVirtualRegister.cpp",
     "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilDbgValueToDbgDeclare.cpp",
@@ -1439,17 +1435,14 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilPIXVirtualRegisters.cpp",
     "${dawn_dxc_dir}/lib/DxilPIXPasses/PixPassHelpers.cpp",
     "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilPIXAddTidToAmplificationShaderPayload.cpp",
-
     "${dawn_dxc_dir}/lib/DxilCompression/DxilCompression.cpp",
     "${dawn_dxc_dir}/lib/DxilCompression/miniz.c",
-
     "${dawn_dxc_dir}/lib/Analysis/IPA/CallGraph.cpp",
     "${dawn_dxc_dir}/lib/Analysis/IPA/CallGraphSCCPass.cpp",
     "${dawn_dxc_dir}/lib/Analysis/IPA/CallPrinter.cpp",
     "${dawn_dxc_dir}/lib/Analysis/IPA/GlobalsModRef.cpp",
     "${dawn_dxc_dir}/lib/Analysis/IPA/IPA.cpp",
     "${dawn_dxc_dir}/lib/Analysis/IPA/InlineCost.cpp",
-    
     "${dawn_dxc_dir}/lib/Analysis/AliasAnalysis.cpp",
     "${dawn_dxc_dir}/lib/Analysis/AliasAnalysisCounter.cpp",
     "${dawn_dxc_dir}/lib/Analysis/AliasAnalysisEvaluator.cpp",
@@ -1520,10 +1513,8 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/Analysis/ValueTracking.cpp",
     "${dawn_dxc_dir}/lib/Analysis/VectorUtils.cpp",
     "${dawn_dxc_dir}/lib/Analysis/VectorUtils2.cpp",
-
     "${dawn_dxc_dir}/lib/Bitcode/Reader/BitcodeReader.cpp",
     "${dawn_dxc_dir}/lib/Bitcode/Reader/BitstreamReader.cpp",
-
     "${dawn_dxc_dir}/lib/Transforms/Scalar/ADCE.cpp",
     "${dawn_dxc_dir}/lib/Transforms/Scalar/AlignmentFromAssumptions.cpp",
     "${dawn_dxc_dir}/lib/Transforms/Scalar/BDCE.cpp",
@@ -1585,7 +1576,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/Transforms/Scalar/StraightLineStrengthReduce.cpp",
     "${dawn_dxc_dir}/lib/Transforms/Scalar/StructurizeCFG.cpp",
     "${dawn_dxc_dir}/lib/Transforms/Scalar/TailRecursionElimination.cpp",
-
     "${dawn_dxc_dir}/lib/Transforms/IPO/BarrierNoopPass.cpp",
     "${dawn_dxc_dir}/lib/Transforms/IPO/ConstantMerge.cpp",
     "${dawn_dxc_dir}/lib/Transforms/IPO/DeadArgumentElimination.cpp",
@@ -1608,7 +1598,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/Transforms/IPO/PruneEH.cpp",
     "${dawn_dxc_dir}/lib/Transforms/IPO/StripDeadPrototypes.cpp",
     "${dawn_dxc_dir}/lib/Transforms/IPO/StripSymbols.cpp",
-
     "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstructionCombining.cpp",
     "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineAddSub.cpp",
     "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineAndOrXor.cpp",
@@ -1622,12 +1611,9 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineShifts.cpp",
     "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineSimplifyDemanded.cpp",
     "${dawn_dxc_dir}/lib/Transforms/InstCombine/InstCombineVectorOps.cpp",
-
     "${dawn_dxc_dir}/lib/PassPrinters/PassPrinters.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Index/CommentToXML.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Index/USRGeneration.cpp",
-    
     "${dawn_dxc_dir}/tools/clang/lib/Tooling/ArgumentsAdjusters.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Tooling/CommonOptionsParser.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Tooling/CompilationDatabase.cpp",
@@ -1636,7 +1622,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Tooling/Refactoring.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Tooling/RefactoringCallbacks.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Tooling/Tooling.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseAST.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseCXXInlineMethods.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseDecl.cpp",
@@ -1654,18 +1639,14 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Parse/Parser.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Parse/ParseHLSL.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Parse/HLSLRootSignature.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Rewrite/DeltaTree.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Rewrite/HTMLRewrite.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Rewrite/RewriteRope.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Rewrite/Rewriter.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Rewrite/TokenRewriter.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Driver/DriverOptions.cpp",
-    
     "${dawn_dxc_dir}/tools/clang/lib/Edit/Commit.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Edit/EditedSource.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTCommon.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTReader.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Serialization/ASTReaderDecl.cpp",
@@ -1677,7 +1658,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Serialization/GlobalModuleIndex.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Serialization/Module.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Serialization/ModuleManager.cpp",
- 
     "${dawn_dxc_dir}/lib/Target/Target.cpp",
     "${dawn_dxc_dir}/lib/Target/TargetIntrinsicInfo.cpp",
     "${dawn_dxc_dir}/lib/Target/TargetLoweringObjectFile.cpp",
@@ -1685,9 +1665,7 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/Target/TargetMachineC.cpp",
     "${dawn_dxc_dir}/lib/Target/TargetRecip.cpp",
     "${dawn_dxc_dir}/lib/Target/TargetSubtargetInfo.cpp",
-
     "${dawn_dxc_dir}/lib/Linker/LinkModules.cpp",
-
     "${dawn_dxc_dir}/lib/ProfileData/InstrProf.cpp",
     "${dawn_dxc_dir}/lib/ProfileData/InstrProfReader.cpp",
     "${dawn_dxc_dir}/lib/ProfileData/InstrProfWriter.cpp",
@@ -1697,7 +1675,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/ProfileData/SampleProf.cpp",
     "${dawn_dxc_dir}/lib/ProfileData/SampleProfReader.cpp",
     "${dawn_dxc_dir}/lib/ProfileData/SampleProfWriter.cpp",
-
     "${dawn_dxc_dir}/lib/Object/Archive.cpp",
     "${dawn_dxc_dir}/lib/Object/ArchiveWriter.cpp",
     "${dawn_dxc_dir}/lib/Object/Binary.cpp",
@@ -1715,7 +1692,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/Object/RecordStreamer.cpp",
     "${dawn_dxc_dir}/lib/Object/SymbolicFile.cpp",
     "${dawn_dxc_dir}/lib/Object/SymbolSize.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Format/BreakableToken.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Format/ContinuationIndenter.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Format/Format.cpp",
@@ -1724,9 +1700,7 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Format/UnwrappedLineFormatter.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Format/UnwrappedLineParser.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Format/WhitespaceManager.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Tooling/Core/Replacement.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Driver/Action.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Driver/Compilation.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Driver/CrossWindowsToolChain.cpp",
@@ -1742,10 +1716,8 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/lib/Driver/ToolChains.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Driver/Tools.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Driver/Types.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/ASTMatchers/ASTMatchFinder.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/ASTMatchers/ASTMatchersInternal.cpp",
-
     "${dawn_dxc_dir}/lib/MC/ConstantPools.cpp",
     "${dawn_dxc_dir}/lib/MC/ELFObjectWriter.cpp",
     "${dawn_dxc_dir}/lib/MC/MCAsmBackend.cpp",
@@ -1799,7 +1771,10 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
 }
 
 dxcompiler_sourceset("dxcompiler_lib_sources_2") {
+  # Must be static to ensure unused globals are stripped, otherwise they
+  # attempt to allocate before the global allocator is initialized.
   as_static_library = true
+
   sources = [
     "${dawn_dxc_dir}/lib/IR/AsmWriter.cpp",
     "${dawn_dxc_dir}/lib/IR/Attributes.cpp",
@@ -1849,7 +1824,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_2") {
     "${dawn_dxc_dir}/lib/IR/ValueSymbolTable.cpp",
     "${dawn_dxc_dir}/lib/IR/ValueTypes.cpp",
     "${dawn_dxc_dir}/lib/IR/Verifier.cpp",
-
     "${dawn_dxc_dir}/lib/AsmParser/LLLexer.cpp",
     "${dawn_dxc_dir}/lib/AsmParser/LLParser.cpp",
     "${dawn_dxc_dir}/lib/AsmParser/Parser.cpp",
@@ -1857,7 +1831,10 @@ dxcompiler_sourceset("dxcompiler_lib_sources_2") {
 }
 
 dxcompiler_sourceset("dxcompiler_lib_sources_3") {
+  # Must be static to ensure unused globals are stripped, otherwise they
+  # attempt to allocate before the global allocator is initialized.
   as_static_library = true
+
   sources = [
     "${dawn_dxc_dir}/tools/clang/lib/Basic/Attributes.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Basic/Builtins.cpp",
@@ -1884,7 +1861,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_3") {
     "${dawn_dxc_dir}/tools/clang/lib/Basic/VersionTuple.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Basic/VirtualFileSystem.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Basic/Warnings.cpp",    
-
     "${dawn_dxc_dir}/tools/clang/lib/AST/APValue.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/AST/ASTConsumer.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/AST/ASTContext.cpp",
@@ -1942,7 +1918,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_3") {
     "${dawn_dxc_dir}/tools/clang/lib/AST/TypePrinter.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/AST/VTableBuilder.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/AST/VTTBuilder.cpp",
-
     "${dawn_dxc_dir}/tools/clang/lib/Analysis/AnalysisDeclContext.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Analysis/BodyFarm.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Analysis/CFG.cpp",
@@ -1967,7 +1942,9 @@ dxcompiler_sourceset("dxcompiler_lib_sources_3") {
 }
 
 dxcompiler_sourceset("dxcompiler_sources") {
+  # Use source_set as these are the sources for the dxcompiler target
   as_source_set = true
+
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcapi.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcassembler.cpp",
@@ -2018,7 +1995,6 @@ executable("dxc") {
   
   sources = [
     "${dawn_dxc_dir}/tools/clang/tools/dxc/dxcmain.cpp",
-    
     "${dawn_dxc_dir}/tools/clang/tools/dxclib/dxc.cpp",
   ]
 }
