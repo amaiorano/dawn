@@ -385,6 +385,7 @@ config("common_config") {
       "/std:c++17", # TODO(amaiorano): Not sure I need this
       "/Zc:__cplusplus",
       "/Zc:twoPhase-", # DXC source relies on MSVC's non-conforming two-phase lookup
+      "/Zc:sizedDealloc-" # Disable sized allocation
     ] + warning_flags
 
     cflags_c = [
@@ -404,6 +405,11 @@ config("common_config") {
 
 static_library("Support") {
   output_name = "LLVMSupport"
+
+  if (dawn_has_build) {
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+  }
 
   public_configs = [
     ":common_config"
@@ -531,30 +537,6 @@ write_cmake_config("SharedLibAffix-h") {
   ]
 }
 
-static_library("DxcSupport") {
-  output_name = "LLVMDxcSupport"
-
-  public_configs = [
-    ":common_config",
-  ]
-
-  public_deps = [
-    ":HLSLOptions-inc",
-    ":SharedLibAffix-h",
-  ]
-
-  sources = [
-      "${dawn_dxc_dir}/lib/DxcSupport/dxcapi.use.cpp",
-      "${dawn_dxc_dir}/lib/DxcSupport/dxcmem.cpp",
-      "${dawn_dxc_dir}/lib/DxcSupport/FileIOHelper.cpp",
-      "${dawn_dxc_dir}/lib/DxcSupport/Global.cpp",
-      "${dawn_dxc_dir}/lib/DxcSupport/HLSLOptions.cpp",
-      "${dawn_dxc_dir}/lib/DxcSupport/Unicode.cpp",
-      "${dawn_dxc_dir}/lib/DxcSupport/WinAdapter.cpp",
-      "${dawn_dxc_dir}/lib/DxcSupport/WinFunctions.cpp",    
-  ]
-}
-
 # Common code for both llvm-tblgen and clang-tblgen
 source_set("TableGen") {
   public_deps = [
@@ -629,14 +611,26 @@ static_library("dxclib") {
   public_configs = [
     ":common_config"
   ]
-  
+
+  if (dawn_has_build) {
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+  }
   public_deps = [
     ":DataTypes-header",
     ":Support",
-    ":DxcSupport",
     ":Intrinsics-td",
   ]
   sources = [
+    "${dawn_dxc_dir}/lib/DxcSupport/dxcapi.use.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/dxcmem.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/FileIOHelper.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/Global.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/HLSLOptions.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/Unicode.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/WinAdapter.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/WinFunctions.cpp",    
+
     "${dawn_dxc_dir}/lib/DxilContainer/DxilContainer.cpp",
     "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerAssembler.cpp",
     "${dawn_dxc_dir}/lib/DxilContainer/DxilContainerReader.cpp",
@@ -1057,16 +1051,26 @@ write_cmake_config("clang-config-h") {
 
 # Template used to split up source_sets from multiple directories with name collisions.
 template("dxcompiler_sourceset") {
-  settings = {
+  assert(defined(invoker.as_source_set) || defined(invoker.as_static_library), "")
+  target_type = ""
+  if (defined(invoker.as_source_set) && invoker.as_source_set) {
+    target_type = "source_set"
+  }
+  if (defined(invoker.as_static_library) && invoker.as_static_library) {
+    target_type = "static_library"
+  }
+
+  target(target_type, target_name) {
+    forward_variables_from(invoker, ["sources"])
+    
     public_configs = [
       ":common_config"
     ]
 
     # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
-    # configs -= [ "//build/config/win:unicode" ]
+    configs -= [ "//build/config/win:unicode" ]
     
     deps = [
-      ":DxcSupport",
       ":dxclib",
       ":hlsl_dxcversion_autogen",
       ":clang-config-h",
@@ -1112,22 +1116,9 @@ template("dxcompiler_sourceset") {
   }
 }
 
-dxcompiler_sourceset("dxcompiler_sources_1") {
+dxcompiler_sourceset("dxcompiler_lib_sources_1") {
+  as_static_library = true
   sources = [
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcapi.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcassembler.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxclibrary.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcompilerobj.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/DXCompiler.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcfilesystem.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcutil.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcdisassembler.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcpdbutils.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxillib.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcvalidator.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxclinker.cpp",
-    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcshadersourceinfo.cpp",
-
     "${dawn_dxc_dir}/lib/HLSL/ComputeViewIdState.cpp",
     "${dawn_dxc_dir}/lib/HLSL/ComputeViewIdStateBuilder.cpp",
     "${dawn_dxc_dir}/lib/HLSL/ControlDependence.cpp",
@@ -1807,7 +1798,8 @@ dxcompiler_sourceset("dxcompiler_sources_1") {
   ]
 }
 
-dxcompiler_sourceset("dxcompiler_sources_2") {
+dxcompiler_sourceset("dxcompiler_lib_sources_2") {
+  as_static_library = true
   sources = [
     "${dawn_dxc_dir}/lib/IR/AsmWriter.cpp",
     "${dawn_dxc_dir}/lib/IR/Attributes.cpp",
@@ -1864,7 +1856,8 @@ dxcompiler_sourceset("dxcompiler_sources_2") {
   ]
 }
 
-dxcompiler_sourceset("dxcompiler_sources_3") {
+dxcompiler_sourceset("dxcompiler_lib_sources_3") {
+  as_static_library = true
   sources = [
     "${dawn_dxc_dir}/tools/clang/lib/Basic/Attributes.cpp",
     "${dawn_dxc_dir}/tools/clang/lib/Basic/Builtins.cpp",
@@ -1973,6 +1966,25 @@ dxcompiler_sourceset("dxcompiler_sources_3") {
   ]
 }
 
+dxcompiler_sourceset("dxcompiler_sources") {
+  as_source_set = true
+  sources = [
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcapi.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcassembler.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxclibrary.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcompilerobj.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/DXCompiler.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcfilesystem.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcutil.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcdisassembler.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcpdbutils.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxillib.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcvalidator.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxclinker.cpp",
+    "${dawn_dxc_dir}/tools/clang/tools/dxcompiler/dxcshadersourceinfo.cpp",
+  ]
+}
+
 loadable_module("dxcompiler") {
   if (dawn_has_build) {
     configs -= [ "//build/config/compiler:chromium_code" ]
@@ -1980,9 +1992,11 @@ loadable_module("dxcompiler") {
   }
 
   deps = [
-    ":dxcompiler_sources_1",
-    ":dxcompiler_sources_2",
-    ":dxcompiler_sources_3",
+    ":DxcDisassembler-inc",
+    ":dxcompiler_sources",
+    ":dxcompiler_lib_sources_1",
+    ":dxcompiler_lib_sources_2",
+    ":dxcompiler_lib_sources_3",
   ]
 }
 
