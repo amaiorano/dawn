@@ -1,5 +1,3 @@
-# Defines system_binary_action().
-#
 # system_binary_action() is like action, except that it runs a system binary.
 # The binary can be in PATH or in the build directory environment file (so that
 # executables in the toolchain dirs are picked up).
@@ -17,10 +15,8 @@ template("system_binary_action") {
                            ])
     script = "build/run_system_binary.py"
     args = [
-      # The first argument is the environment file saved to the build
-      # directory. This is required because the Windows toolchain setup saves
-      # the VC paths and such so that running "mc.exe" will work with the
-      # configured toolchain. This file is in the root build dir.
+      # Pass in the env file saved to the build directory that contains
+      # the VC paths in it.
       "environment.$current_cpu",
     ] + invoker.args
   }

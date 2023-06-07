@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Runs a built binary."""
 
 import subprocess
 import sys

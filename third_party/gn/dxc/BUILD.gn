@@ -18,9 +18,9 @@ import("${dawn_root}/scripts/dawn_features.gni")
 
 # TODO(amaiorano): Validate that we can copy these from LLVM
 import("build/write_cmake_config.gni")
-import("build/compiled_action.gni")
 
 import("build/system_binary_action.gni")
+import("build/built_target_action.gni")
 dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
 
 llvm_target_triple = "dxil-ms-dx"  # Force target triple
@@ -662,14 +662,14 @@ template("tblgen") {
   assert(defined(invoker.output_name), "must set 'output_name")
   assert(defined(invoker.tblgen_target), "must set 'tblgen_target")
 
-  compiled_action(target_name) {
+  built_target_action(target_name) {
     td_file = invoker.td_file
-    tool = invoker.tblgen_target
+    target = invoker.tblgen_target
     inputs = [ td_file ]
 
     # TODO(amaiorano): Maybe targets should provide full path
     output_file = "$target_gen_dir/" + invoker.output_name
-    dep_file = "$output_file.d"
+    depfile = "$output_file.d"
     td_file = rebase_path(td_file, root_build_dir)
 
     args = [
@@ -678,7 +678,7 @@ template("tblgen") {
              "-I",
              get_path_info(td_file, "dir"),
              "-d",
-             rebase_path(dep_file, root_build_dir),
+             rebase_path(depfile, root_build_dir),
              "-o",
              rebase_path(output_file, root_build_dir),
              td_file,
