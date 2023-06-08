@@ -16,13 +16,11 @@ import("../../../scripts/dawn_overrides_with_defaults.gni")
 
 import("${dawn_root}/scripts/dawn_features.gni")
 
-# TODO(amaiorano): Validate that we can copy these from LLVM
-import("build/write_cmake_config.gni")
-
-import("build/system_binary_action.gni")
 import("build/built_target_action.gni")
-dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
+import("build/cmake_configure_file.gni")
+import("build/system_binary_action.gni")
 
+dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
 llvm_target_triple = "dxil-ms-dx"  # Force target triple
 llvm_version_major = 3
 llvm_version_minor = 7
@@ -49,14 +47,13 @@ if (current_cpu == "x64") {
 ## CMake config targets
 #######################################################################
 
-write_cmake_config("config-header") {
+cmake_configure_file("config-header") {
   input = "${dawn_dxc_dir}/include/llvm/Config/config.h.cmake"
   output = "$target_gen_dir/include/llvm/Config/config.h"
   values = [
     # TODO(amaiorano): Many of the flags set here are duplicated for the "llvm-config-header" target below.
     # Factor this out somehow (template?).
-    "LLVM_ENABLE_ABI_BREAKING_CHECKS=0",  # TODO(amaiorano): enable this flag
-                                          # when asserts are enabled
+    "LLVM_ENABLE_ABI_BREAKING_CHECKS=1",
     "LLVM_ENABLE_THREADS=1",
     "LLVM_HAS_ATOMICS=1",
     "HAVE_INTTYPES_H=1",
@@ -189,7 +186,7 @@ write_cmake_config("config-header") {
     "HAVE_SYS_DIR_H=",
     "HAVE_SYS_IOCTL_H=",
 
-    # "HAVE_SYS_MMAN_H=", # TODO(amaiorano): Should be #undef'd by python script
+    "HAVE_SYS_MMAN_H=", # TODO(amaiorano): Should be #undef'd by python script
     "HAVE_SYS_NDIR_H=",
     "HAVE_SYS_PARAM_H=",
     "HAVE_SYS_RESOURCE_H=",
@@ -247,7 +244,7 @@ write_cmake_config("config-header") {
   }
 }
 
-write_cmake_config("llvm-config-header") {
+cmake_configure_file("llvm-config-header") {
   input = "${dawn_dxc_dir}/include/llvm/Config/llvm-config.h.cmake"
   output = "$target_gen_dir/include/llvm/Config/llvm-config.h"
   values = [
@@ -256,8 +253,7 @@ write_cmake_config("llvm-config-header") {
     "LLVM_DATADIR=",
     "LLVM_DEFAULT_TARGET_TRIPLE=$llvm_target_triple",
     "LLVM_DOCSDIR=",
-    "LLVM_ENABLE_ABI_BREAKING_CHECKS=0",  # TODO(amaiorano): enable this flag
-                                          # when asserts are enabled
+    "LLVM_ENABLE_ABI_BREAKING_CHECKS=1",
     "LLVM_ETCDIR=",
     "LLVM_HAS_ATOMICS=1",
     "LLVM_HOST_TRIPLE=$llvm_current_triple",
@@ -311,7 +307,7 @@ write_cmake_config("llvm-config-header") {
   }
 }
 
-write_cmake_config("DataTypes-header") {
+cmake_configure_file("DataTypes-header") {
   input = "${dawn_dxc_dir}/include/llvm/Support/DataTypes.h.cmake"
   output = "$target_gen_dir/include/llvm/Support/DataTypes.h"
   values = [
@@ -322,7 +318,7 @@ write_cmake_config("DataTypes-header") {
   ]
 }
 
-write_cmake_config("Targets-def") {
+cmake_configure_file("Targets-def") {
   input = "${dawn_dxc_dir}/include/llvm/Config/Targets.def.in"
   output = "$target_gen_dir/include/llvm/Config/Targets.def"
   values = [
@@ -334,25 +330,25 @@ write_cmake_config("Targets-def") {
   ]
 }
 
-write_cmake_config("AsmPrinters-def") {
+cmake_configure_file("AsmPrinters-def") {
   input = "${dawn_dxc_dir}/include/llvm/Config/AsmPrinters.def.in"
   output = "$target_gen_dir/include/llvm/Config/AsmPrinters.def"
   values = [ "LLVM_ENUM_ASM_PRINTERS=" ]
 }
 
-write_cmake_config("AsmParsers-def") {
+cmake_configure_file("AsmParsers-def") {
   input = "${dawn_dxc_dir}/include/llvm/Config/AsmParsers.def.in"
   output = "$target_gen_dir/include/llvm/Config/AsmParsers.def"
   values = [ "LLVM_ENUM_ASM_PARSERS=" ]
 }
 
-write_cmake_config("Disassemblers-def") {
+cmake_configure_file("Disassemblers-def") {
   input = "${dawn_dxc_dir}/include/llvm/Config/Disassemblers.def.in"
   output = "$target_gen_dir/include/llvm/Config/Disassemblers.def"
   values = [ "LLVM_ENUM_DISASSEMBLERS=" ]
 }
 
-write_cmake_config("SharedLibAffix-h") {
+cmake_configure_file("SharedLibAffix-h") {
   input = "${dawn_dxc_dir}/lib/DxcSupport/SharedLibAffix.inc"
   output = "$target_gen_dir/include/dxc/Support/SharedLibAffix.h"
   values = [
@@ -362,7 +358,7 @@ write_cmake_config("SharedLibAffix-h") {
   ]
 }
 
-write_cmake_config("clang-basic-version-inc") {
+cmake_configure_file("clang-basic-version-inc") {
   input = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Version.inc.in"
   output = "$target_gen_dir/tools/clang/include/clang/Basic/Version.inc"
   values = [
@@ -375,7 +371,7 @@ write_cmake_config("clang-basic-version-inc") {
   ]
 }
 
-write_cmake_config("clang-config-h") {
+cmake_configure_file("clang-config-h") {
   input = "${dawn_dxc_dir}/tools/clang//include/clang/Config/config.h.cmake"
   output = "$target_gen_dir/tools/clang//include/clang/Config/config.h"
   values = [
