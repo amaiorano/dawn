@@ -89,7 +89,6 @@ cmake_configure_file("config-header") {
     "ENABLE_CRASH_OVERRIDES=1",
     "DISABLE_LLVM_DYLIB_ATEXIT=1",
     "ENABLE_PIC=1",
-    "HAVE_DECL_STRERROR_S=1",
     "HAVE_ISATTY=",
     "LLVM_ENABLE_ZLIB=",
     "LLVM_USE_INTEL_JITEVENTS=",
@@ -121,7 +120,6 @@ cmake_configure_file("config-header") {
     "HAVE_CXXABI_H=",
     "HAVE_DECL_ARC4RANDOM=",
     "HAVE_DIA_SDK=",
-    "HAVE_DIRENT_H=",
     "HAVE_DLERROR=",
     "HAVE_DLFCN_H=",
     "HAVE_DLOPEN=",
@@ -133,11 +131,8 @@ cmake_configure_file("config-header") {
     "HAVE_FFI_FFI_H=",
     "HAVE_FFI_H=",
     "HAVE_FUTIMENS=",
-    "HAVE_FUTIMES=",
     "HAVE_GETCWD=",
-    "HAVE_GETPAGESIZE=",
     "HAVE_GETRLIMIT=",
-    "HAVE_GETRUSAGE=",
     "HAVE_GETTIMEOFDAY=",
     "HAVE_INT64_T=1",
     "HAVE_LIBDL=",
@@ -152,7 +147,6 @@ cmake_configure_file("config-header") {
     "HAVE_MACH_MACH_H=",
     "HAVE_MACH_O_DYLD_H=",
     "HAVE_MALLCTL=",
-    "HAVE_MALLINFO=",
     "HAVE_MALLINFO2=",
     "HAVE_MALLOC_H=1",
     "HAVE_MALLOC_MALLOC_H=",
@@ -164,9 +158,6 @@ cmake_configure_file("config-header") {
     "HAVE_OPENDIR=",
     "HAVE_POSIX_SPAWN=",
     "HAVE_PREAD=",
-    "HAVE_PTHREAD_GETSPECIFIC=",
-    "HAVE_PTHREAD_H=",
-    "HAVE_PTHREAD_MUTEX_LOCK=",
     "HAVE_PTHREAD_RWLOCK_INIT=",
     "HAVE_RAND48=",
     "HAVE_READDIR=",
@@ -186,18 +177,13 @@ cmake_configure_file("config-header") {
     "HAVE_SYS_DIR_H=",
     "HAVE_SYS_IOCTL_H=",
 
-    "HAVE_SYS_MMAN_H=", # TODO(amaiorano): Should be #undef'd by python script
     "HAVE_SYS_NDIR_H=",
-    "HAVE_SYS_PARAM_H=",
-    "HAVE_SYS_RESOURCE_H=",
     "HAVE_SYS_STAT_H=1",
-    "HAVE_SYS_TIME_H=",
     "HAVE_SYS_TYPES_H=",
     "HAVE_SYS_UIO_H=",
     "HAVE_SYS_WAIT_H=",
     "HAVE_TERMINFO=",
     "HAVE_TERMIOS_H=",
-    "HAVE_UNISTD_H=",
     "HAVE_UTIME_H=",
     "HAVE_VALGRIND_VALGRIND_H=",
     "HAVE_WRITEV=",
@@ -208,6 +194,42 @@ cmake_configure_file("config-header") {
     "RETSIGTYPE=void",
     "WIN32_ELMCB_PCSTR=PCSTR",
   ]
+
+  if (is_win) {
+    values += [
+      "HAVE_DECL_STRERROR_S=1",
+      "HAVE_DIRENT_H=",
+      "HAVE_FUTIMES=",
+      "HAVE_GETPAGESIZE=",
+      "HAVE_GETRUSAGE=",
+      "HAVE_MALLINFO=",
+      "HAVE_SYS_MMAN_H=",
+      "HAVE_SYS_PARAM_H=",
+      "HAVE_SYS_RESOURCE_H=",
+      "HAVE_SYS_TIME_H=",
+      "HAVE_UNISTD_H=",
+      "HAVE_PTHREAD_GETSPECIFIC=",
+      "HAVE_PTHREAD_H=",
+      "HAVE_PTHREAD_MUTEX_LOCK=",
+    ]
+  } else if (is_linux) {
+    values += [
+      "HAVE_DECL_STRERROR_S=",
+      "HAVE_DIRENT_H=1",
+      "HAVE_FUTIMES=1",
+      "HAVE_GETPAGESIZE=1",
+      "HAVE_GETRUSAGE=1",
+      "HAVE_MALLINFO=1",
+      "HAVE_SYS_MMAN_H=1",
+      "HAVE_SYS_PARAM_H=1",
+      "HAVE_SYS_RESOURCE_H=1",
+      "HAVE_SYS_TIME_H=1",
+      "HAVE_UNISTD_H=1",
+      "HAVE_PTHREAD_GETSPECIFIC=1",
+      "HAVE_PTHREAD_H=1",
+      "HAVE_PTHREAD_MUTEX_LOCK=1",
+    ]
+  }
 
   # NOTE: These are meta-definitions for the variable (not value) to determine
   # whether they should be defined or undefined in the generated header.
@@ -394,8 +416,9 @@ cmake_configure_file("clang-config-h") {
 #######################################################################
 
 config("common_config") {
-  if (is_win) {
-    warning_flags = [
+  warning_flags = []
+  if (is_clang) {
+    warning_flags += [
       "-Wno-error",  # For now, allow warnings @TODO(amaiorano): replace with
                      # specific warning disables
       "-Wno-unknown-pragmas",
@@ -433,22 +456,38 @@ config("common_config") {
       "-Wno-unused-variable",
       "-Wno-microsoft-template",
       "-Wno-unused-private-field",
+      "-Wno-deprecated-enum-enum-conversion",
+      "-Wno-deprecated-anon-enum-enum-conversion",
+      "-Wno-ambiguous-reversed-operator",
+    ]
+  }
+
+  if (is_win) {
+    cflags_cc = [
+      "/EHsc",  # DXC uses exceptions
+      "/std:c++17",  # TODO(amaiorano): Not sure I need this
+      "/Zc:__cplusplus",
+      "/Zc:twoPhase-",  # DXC source relies on MSVC's non-conforming
+                        # two-phase lookup
+      "/Zc:sizedDealloc-",  # Disable sized allocation
     ]
 
-    cflags_cc = [
-                  "/EHsc",  # DXC uses exceptions
-                  "/std:c++17",  # TODO(amaiorano): Not sure I need this
-                  "/Zc:__cplusplus",
-                  "/Zc:twoPhase-",  # DXC source relies on MSVC's non-conforming
-                                    # two-phase lookup
-                  "/Zc:sizedDealloc-",  # Disable sized allocation
-                ] + warning_flags
-
     cflags_c = [
-                 "/EHsc",  # DXC uses exceptions
-                 "/std:c17",
-               ] + warning_flags
+      "/EHsc",  # DXC uses exceptions
+      "/std:c17",
+    ]
+  } else if (is_linux) {
+    cflags_c = []
+
+    cflags_cc = [
+      "-fcxx-exceptions",  # DXC uses exceptions
+      "-fms-extensions",
+      "-frtti",  # DXC uses RTTI
+    ]
   }
+
+  cflags_c += warning_flags
+  cflags_cc += warning_flags
 
   include_dirs = [
     "${dawn_dxc_dir}/include",
@@ -1112,7 +1151,9 @@ static_library("dxclib") {
   }
   public_deps = [
     ":DataTypes-header",
+    ":HLSLOptions-inc",
     ":Intrinsics-td",
+    ":SharedLibAffix-h",
     ":Support",
   ]
   sources = [
@@ -1179,8 +1220,10 @@ template("dxcompiler_sourceset") {
 
     public_configs = [ ":common_config" ]
 
-    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
-    configs -= [ "//build/config/win:unicode" ]
+    if (is_win) {
+      # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
+      configs -= [ "//build/config/win:unicode" ]
+    }
 
     deps = [
       ":AttrPCHRead-inc",
@@ -1209,6 +1252,15 @@ template("dxcompiler_sourceset") {
       "${target_gen_dir}/lib/HLSL",
       "${target_gen_dir}/lib/DxilPIXPasses",
     ]
+
+    if (is_linux) {
+      include_dirs += [
+        # TODO(amaiorano): Add $dawn_dxheaders_dir variable
+        # TODO(amaiorano): Add DirectX-Headers to googlesource.com as chromium external mirror
+        "$dawn_dxc_dir/../DirectX-Headers/include/directx",
+        "$dawn_dxc_dir/../DirectX-Headers/include/wsl/stubs/",
+      ]
+    }
 
     if (is_win) {
       deps += [ ":dxcetw-h" ]
@@ -1317,28 +1369,6 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/lib/DxcBindingTable/DxcBindingTable.cpp",
     "${dawn_dxc_dir}/lib/DxilCompression/DxilCompression.cpp",
     "${dawn_dxc_dir}/lib/DxilCompression/miniz.c",
-    "${dawn_dxc_dir}/lib/DxilDia/DxcPixCompilationInfo.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxcPixDxilDebugInfo.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxcPixDxilStorage.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxcPixEntrypoints.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxcPixLiveVariables.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxcPixLiveVariables_FragmentIterator.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxcPixTypes.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxcPixVariables.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDia.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaDataSource.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaEnumTables.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaSession.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaSymbolManager.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTable.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableFrameData.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableInjectedSources.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableInputAssemblyFile.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableLineNumbers.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSections.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSegmentMap.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSourceFiles.cpp",
-    "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSymbols.cpp",
     "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilAddPixelHitInstrumentation.cpp",
     "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilAnnotateWithVirtualRegister.cpp",
     "${dawn_dxc_dir}/lib/DxilPIXPasses/DxilDbgValueToDbgDeclare.cpp",
@@ -1873,6 +1903,33 @@ dxcompiler_sourceset("dxcompiler_lib_sources_1") {
     "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcisenseimpl.cpp",
     "${dawn_dxc_dir}/tools/clang/tools/libclang/dxcrewriteunused.cpp",
   ]
+
+  if (is_win) {
+    sources += [
+      "${dawn_dxc_dir}/lib/DxilDia/DxcPixCompilationInfo.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxcPixDxilDebugInfo.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxcPixDxilStorage.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxcPixEntrypoints.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxcPixLiveVariables.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxcPixLiveVariables_FragmentIterator.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxcPixTypes.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxcPixVariables.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDia.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaDataSource.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaEnumTables.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaSession.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaSymbolManager.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTable.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableFrameData.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableInjectedSources.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableInputAssemblyFile.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableLineNumbers.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSections.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSegmentMap.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSourceFiles.cpp",
+      "${dawn_dxc_dir}/lib/DxilDia/DxilDiaTableSymbols.cpp",
+    ]
+  }
 }
 
 dxcompiler_sourceset("dxcompiler_lib_sources_2") {
@@ -2088,8 +2145,10 @@ executable("dxc") {
     configs += [ "//build/config/compiler:no_chromium_code" ]
   }
 
-  # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
-  configs -= [ "//build/config/win:unicode" ]
+  if (is_win) {
+    # DXC is built with multibyte character set, so it expects Win32 functions to map the ANSI ones, not the UNICODE ones.
+    configs -= [ "//build/config/win:unicode" ]
+  }
 
   deps = [ ":dxclib" ]
 
