@@ -27,6 +27,11 @@ llvm_version_minor = 7
 llvm_version_patch = 0
 llvm_version = "$llvm_version_major.$llvm_version_minor.$llvm_version_patch"
 
+declare_args() {
+  # DXC sometimes asserts on valid HLSL. Set this to true to disable assertions in debug builds.
+  dxc_disable_asserts_debug = false
+}
+
 if (host_cpu == "x86" || host_cpu == "x64") {
   native_target = "X86"
 } else {
@@ -496,6 +501,11 @@ config("common_config") {
     "${dawn_dxc_dir}/include/llvm/llvm_assert",
     "${target_gen_dir}/include",  # Generated files
   ]
+
+  defines = []
+  if (is_debug && dxc_disable_asserts_debug) {
+    defines += [ "NDEBUG" ]
+  }
 }
 
 #######################################################################
