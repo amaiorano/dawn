@@ -399,8 +399,8 @@ cmake_configure_file("clang-basic-version-inc") {
 }
 
 cmake_configure_file("clang-config-h") {
-  input = "${dawn_dxc_dir}/tools/clang//include/clang/Config/config.h.cmake"
-  output = "$target_gen_dir/tools/clang//include/clang/Config/config.h"
+  input = "${dawn_dxc_dir}/tools/clang/include/clang/Config/config.h.cmake"
+  output = "$target_gen_dir/tools/clang/include/clang/Config/config.h"
   values = [
     # TODO(amaiorano): Populate values correctly if necessary.
     "BUG_REPORT_URL=http://llvm.org/bugs/",
@@ -413,6 +413,14 @@ cmake_configure_file("clang-config-h") {
     "CLANG_HAVE_LIBXML=",
     "BACKEND_PACKAGE_STRING=",
     "HOST_LINK_VERSION=",
+  ]
+}
+
+cmake_configure_file("dxc-config-h") {
+  input = "${dawn_dxc_dir}/include/dxc/config.h.cmake"
+  output = "$target_gen_dir/include/dxc/config.h"
+  values = [
+    "DXC_DISABLE_ALLOCATOR_OVERRIDES=1",
   ]
 }
 
@@ -530,6 +538,7 @@ static_library("Support") {
     ":Targets-def",
     ":config-header",
     ":llvm-config-header",
+    ":dxc-config-h",
   ]
 
   sources = [
@@ -1195,6 +1204,7 @@ static_library("dxclib") {
     "${dawn_dxc_dir}/lib/DxcSupport/HLSLOptions.cpp",
     "${dawn_dxc_dir}/lib/DxcSupport/Unicode.cpp",
     "${dawn_dxc_dir}/lib/DxcSupport/WinAdapter.cpp",
+    "${dawn_dxc_dir}/lib/DxcSupport/WinIncludes.cpp",
     "${dawn_dxc_dir}/lib/DxcSupport/WinFunctions.cpp",
     "${dawn_dxc_dir}/lib/DxcSupport/dxcapi.use.cpp",
     "${dawn_dxc_dir}/lib/DxcSupport/dxcmem.cpp",
@@ -1285,6 +1295,10 @@ template("dxcompiler_sourceset") {
       "LIBCLANG_CC=",
       "_CINDEX_LIB_",
     ]
+
+    if (defined(invoker.defines)) {
+      defines += invoker.defines
+    }
   }
 }
 
