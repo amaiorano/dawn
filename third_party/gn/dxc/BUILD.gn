@@ -19,6 +19,9 @@ import("${dawn_root}/scripts/dawn_features.gni")
 import("build/built_target_action.gni")
 import("build/cmake_configure_file.gni")
 import("build/system_binary_action.gni")
+import("build/generate_version_include.gni")
+import("build/add_hlsl_hctgen.gni")
+
 
 dawn_dxc_gn_dir = "${dawn_dxc_dir}/../gn"
 llvm_target_triple = "dxil-ms-dx"  # Force target triple
@@ -76,7 +79,7 @@ cmake_configure_file("config-header") {
     "LLVM_INFODIR=",
     "LLVM_MANDIR=",
     "LLVM_NATIVE_ARCH=$native_target",
-    "LLVM_PREFIX=/usr/local",  #TODO(amaiorano): Set this properly?
+    "LLVM_PREFIX=/usr/local",
     "LLVM_VERSION_MAJOR=$llvm_version_major",
     "LLVM_VERSION_MINOR=$llvm_version_minor",
     "LLVM_VERSION_PATCH=$llvm_version_patch",
@@ -89,7 +92,7 @@ cmake_configure_file("config-header") {
     "strtoll=",
     "strtoull=",
 
-    #@TODO(amaiorano): Revisit variables below. Most are just unset for now.
+    # TODO(amaiorano): Revisit variables below. Most are just unset for now.
     "ENABLE_BACKTRACES=1",
     "ENABLE_CRASH_OVERRIDES=1",
     "DISABLE_LLVM_DYLIB_ATEXIT=1",
@@ -288,7 +291,7 @@ cmake_configure_file("llvm-config-header") {
     "LLVM_INFODIR=",
     "LLVM_MANDIR=",
     "LLVM_NATIVE_ARCH=$native_target",
-    "LLVM_PREFIX=/usr/local",  #TODO(amaiorano): Set this properly?
+    "LLVM_PREFIX=/usr/local",
     "LLVM_USE_INTEL_JITEVENTS=",
     "LLVM_USE_OPROFILE=",
     "LLVM_VERSION_MAJOR=$llvm_version_major",
@@ -379,8 +382,8 @@ cmake_configure_file("SharedLibAffix-h") {
   input = "${dawn_dxc_dir}/lib/DxcSupport/SharedLibAffix.inc"
   output = "$target_gen_dir/include/dxc/Support/SharedLibAffix.h"
   values = [
-    # TODO(amaiorano): Expose arg to set these?
     "CMAKE_SHARED_LIBRARY_PREFIX=",
+    # TODO(amaiorano): .dll for Win32, .so for Linux, .dylib for MacOS?
     "CMAKE_SHARED_LIBRARY_SUFFIX=.dll",
   ]
 }
@@ -389,7 +392,6 @@ cmake_configure_file("clang-basic-version-inc") {
   input = "${dawn_dxc_dir}/tools/clang/include/clang/Basic/Version.inc.in"
   output = "$target_gen_dir/tools/clang/include/clang/Basic/Version.inc"
   values = [
-    # TODO(amaiorano): Populate values correctly if necessary.
     "CLANG_VERSION=$llvm_version",
     "CLANG_VERSION_MAJOR=$llvm_version_major",
     "CLANG_VERSION_MINOR=$llvm_version_minor",
@@ -402,7 +404,6 @@ cmake_configure_file("clang-config-h") {
   input = "${dawn_dxc_dir}/tools/clang/include/clang/Config/config.h.cmake"
   output = "$target_gen_dir/tools/clang/include/clang/Config/config.h"
   values = [
-    # TODO(amaiorano): Populate values correctly if necessary.
     "BUG_REPORT_URL=http://llvm.org/bugs/",
     "CLANG_DEFAULT_OPENMP_RUNTIME=libgomp",
     "CLANG_LIBDIR_SUFFIX=",
@@ -432,8 +433,7 @@ config("common_config") {
   warning_flags = []
   if (is_clang) {
     warning_flags += [
-      "-Wno-error",  # For now, allow warnings @TODO(amaiorano): replace with
-                     # specific warning disables
+      "-Wno-error",  # TODO(amaiorano): For now, allow warnings
       "-Wno-unknown-pragmas",
       "-Wno-shadow",
       "-Wno-deprecated-declarations",
@@ -478,7 +478,7 @@ config("common_config") {
   if (is_win) {
     cflags_cc = [
       "/EHsc",  # DXC uses exceptions
-      "/std:c++17",  # TODO(amaiorano): Not sure I need this
+      "/std:c++17",  # TODO(amaiorano): Not sure this is needed
       "/Zc:__cplusplus",
       "/Zc:twoPhase-",  # DXC source relies on MSVC's non-conforming
                         # two-phase lookup
@@ -1057,74 +1057,11 @@ system_binary_action("dxcetw-h") {
   ]
 }
 
-# Invokes gen_version.py
-# TODO(amaiorano): Move to generate_version_include.gni
-template("generate_version_include") {
-  assert(defined(invoker.input_file), "must set 'input_file' in $target_name")
-  assert(defined(invoker.output_file), "must set 'output_file' in $target_name")
-
-  if (!defined(invoker.input_file)) {
-    # No input file, generate one
-    assert(false, "Fix gen_version.py so that it outputs to a file")
-    action(target_name) {
-      script = "${dawn_dxc_dir}/utils/version/gen_version.py"
-      outputs = [ "${target_gen_dir}/${invoker.output_file}" ]
-      args = []
-      if (defined(invoker.gen_flags)) {
-        args += invoker.gen_flags
-      }
-      args += [
-        ">",  # TODO(amaiorano): This doesn't work. Need a way to route script
-              # output to a file (modify script or create a 'shell_command'
-              # action template)
-        rebase_path(invoker.output_file, root_build_dir),
-      ]
-    }
-  } else {
-    # Input file provided, just copy it
-    copy(target_name) {
-      sources = [ invoker.input_file ]
-      outputs = [ "${target_gen_dir}/${invoker.output_file}" ]
-    }
-  }
-}
 generate_version_include("hlsl_dxcversion_autogen") {
   input_file = "${dawn_dxc_dir}/utils/version/version.inc"
   output_file = "/utils/version/dxcversion.inc"
 }
 
-# See cmake/modules/HCT.cmake
-# TODO(amaiorano): Move to add_hlsl_hctgen.gni
-template("add_hlsl_hctgen") {
-  assert(defined(invoker.mode), "must set 'mode' in $target_name")
-  assert(defined(invoker.output), "must set 'output' in $target_name")
-
-  action(target_name) {
-    if (defined(invoker.build_dir) && invoker.build_dir) {
-      # TODO(amaiorano): See HCT.cmake
-    }
-    if (defined(invoker.code_tag) && invoker.code_tag) {
-      # TODO(amaiorano): See HCT.cmake
-    }
-
-    script = "${invoker.dawn_dxc_dir}/utils/hct/hctgen.py"
-    inputs = [
-      "${invoker.dawn_dxc_dir}/utils/hct/gen_intrin_main.txt",
-      "${invoker.dawn_dxc_dir}/utils/hct/hctdb.py",
-      "${invoker.dawn_dxc_dir}/utils/hct/hctdb_instrhelp.py",
-    ]
-    gen_output = "$target_gen_dir" + invoker.output
-    outputs = [ gen_output ]
-    args = [
-      "--force-lf",  # Always?
-      "${invoker.mode}",
-      "--output",
-      rebase_path(gen_output, root_build_dir),
-    ]
-
-    # TODO(amaiorano) Make sure both build_dir and code_tag aren't true
-  }
-}
 add_hlsl_hctgen("DxcDisassembler-inc") {
   mode = "DxcDisassembler"
   output = "/tools/clang/tools/dxcompiler/DxcDisassembler.inc"
