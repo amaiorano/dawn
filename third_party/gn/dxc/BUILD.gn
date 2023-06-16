@@ -1212,10 +1212,8 @@ template("dxcompiler_sourceset") {
 
     if (is_linux) {
       include_dirs += [
-        # TODO(amaiorano): Add $dawn_dxheaders_dir variable
-        # TODO(amaiorano): Add DirectX-Headers to googlesource.com as chromium external mirror
-        "$dawn_dxc_dir/../DirectX-Headers/include/directx",
-        "$dawn_dxc_dir/../DirectX-Headers/include/wsl/stubs/",
+        "$dawn_dxheaders_dir/include/directx",
+        "$dawn_dxheaders_dir/include/wsl/stubs/",
       ]
     }
 
